@@ -2,6 +2,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "C#: Script.Main Debug",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/Assets/Scripts/Scratch/Script.Main/Script.Main.csproj"
+        },
+
+        {
             "name": "Attach to Unity",
             "type": "vstuc",
             "request": "attach"
