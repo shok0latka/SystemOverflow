@@ -1,11 +1,10 @@
-using Script.Core.Execution;
 using Script.Core.Statements.ControlFlow;
 
 namespace Script.Core.Statements;
 
 public sealed class SequenceStatement : IStatement
 {
-    private readonly List<IStatement> statements = new();
+    private readonly List<IStatement> statements = [];
 
     public IReadOnlyList<IStatement> Statements => statements;
 
@@ -24,11 +23,11 @@ public sealed class SequenceStatement : IStatement
         statements.RemoveAt(index);
     }
 
-    public ControlFlowResult Execute(ScriptExecutionContext context)
+    public ControlFlowResult Execute()
     {
         foreach (var stmt in statements)
         {
-            var result = stmt.Execute(context);
+            var result = stmt.Execute();
             if (result.Kind != ControlFlowKind.None)
                 return result;
         }

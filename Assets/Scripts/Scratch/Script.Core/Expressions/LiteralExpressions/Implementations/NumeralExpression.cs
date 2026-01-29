@@ -3,7 +3,7 @@ using Script.Core.Types;
 
 namespace Script.Core.Expressions.LiteralExpressions.Implementations;
 
-public sealed class NumeralExpression(string raw) : UserInputExpression(raw)
+public sealed class NumeralExpression : UserInputExpression
 {
     private object? _value;
 

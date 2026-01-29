@@ -3,7 +3,7 @@ using Script.Core.Types;
 
 namespace Script.Core.Expressions.LiteralExpressions.Implementations;
 
-public sealed class LiteralExpression(string raw) : UserInputExpression(raw)
+public sealed class LiteralExpression : UserInputExpression
 {
     private string _value = string.Empty;
 

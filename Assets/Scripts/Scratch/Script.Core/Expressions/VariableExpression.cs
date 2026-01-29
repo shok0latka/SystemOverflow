@@ -4,7 +4,7 @@ namespace Script.Core.Expressions;
 
 public class VariableExpression: Expression
 {
-    public Variable Var { get; init; }
+    public Variable Var { get; set; }
 
     public override object? Evaluate()
     {

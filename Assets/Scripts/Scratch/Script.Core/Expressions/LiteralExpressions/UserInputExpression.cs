@@ -2,18 +2,15 @@ namespace Script.Core.Expressions.LiteralExpressions;
 
 public abstract class UserInputExpression : Expression
 {
-    public string RawText { get; private set; }
-
-    protected UserInputExpression(string raw)
-    {
-        RawText = raw;
-        Reparse();
-    }
-
-    public void UpdateRaw(string raw)
-    {
-        RawText = raw;
-        Reparse();
+    private string rawText = string.Empty;
+    public string RawText 
+    { 
+        get => rawText;
+        set
+        {
+            rawText = value;
+            Reparse();
+        } 
     }
 
     protected abstract void Reparse();
