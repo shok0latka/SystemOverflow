@@ -1,4 +1,4 @@
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Addition;
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Addition;
 
 public abstract class AdditionOperator : BinaryOperatorOverload, ITaggedBinaryOperator
 {

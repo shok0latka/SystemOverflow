@@ -1,6 +1,6 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Addition.Overloads;
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Addition.Overloads;
 
 public sealed class AddIntInt : AdditionOperator
 {
