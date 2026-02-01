@@ -1,10 +1,10 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Equality.Overloads;
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Inequality.Overloads;
 
-public sealed class EqualNumeric : EqualityOperator, ISelfRegistrableOverload
+public sealed class NotEqualNumeric : NotEqualOperator, ISelfRegistrableOverload
 {
-    public EqualNumeric()
+    public NotEqualNumeric()
     {
         LeftArg = ScriptType.Float;
         RightArg = ScriptType.Float;
@@ -22,15 +22,24 @@ public sealed class EqualNumeric : EqualityOperator, ISelfRegistrableOverload
         }
     }
 
+    protected override object? EvaluateImpl(Expression left, Expression right)
+    {
+        return Math.Abs(
+            Convert.ToSingle(left.Evaluate()) -
+            Convert.ToSingle(right.Evaluate())
+        ) >= 1e-6f;
+    }
+
     public static void Register(ref Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
     {
-        var instance = new EqualNumeric();
-        List<(ScriptType, ScriptType)> keys = [
-            (ScriptType.Float, ScriptType.Float),
+        var instance = new NotEqualNumeric();
+        var keys = new[]
+        {
+            (ScriptType.Integer, ScriptType.Integer),
             (ScriptType.Integer, ScriptType.Float),
             (ScriptType.Float, ScriptType.Integer),
-            (ScriptType.Integer, ScriptType.Integer)
-        ];
+            (ScriptType.Float, ScriptType.Float),
+        };
 
         foreach (var key in keys)
         {
@@ -40,13 +49,5 @@ public sealed class EqualNumeric : EqualityOperator, ISelfRegistrableOverload
                     $"Duplicate overload found for {Tag} with key {key}");
             }
         }
-    }
-    
-    protected override object? EvaluateImpl(Expression left, Expression right)
-    {
-        return Math.Abs(
-            Convert.ToSingle(left.Evaluate()) -
-            Convert.ToSingle(right.Evaluate())
-        ) < 1e-6f;
     }
 }

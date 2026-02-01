@@ -12,9 +12,10 @@ public sealed class IfStatement : IStatement
         get => condition;
         set
         {
-            if ((value?.Type ?? ScriptType.Undefined) is not ScriptType.Undefined or ScriptType.Boolean)
+            var newType = value?.Type ?? ScriptType.Undefined;
+            if (newType != ScriptType.Undefined && newType != ScriptType.Boolean)
             {
-                throw new ArgumentException("Incorrect condition type (expected bool or undefined)", nameof(Condition));
+                throw new ArgumentException($"Incorrect condition type {newType}. Expected: {ScriptType.Boolean} or {ScriptType.Undefined}", nameof(Condition));
             }
             condition = value;
         }
