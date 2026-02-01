@@ -35,7 +35,18 @@ namespace Script.Core.Expressions.BinaryExpressions
 
         private static BinaryOperatorTag CreateTag()
         {
-            var instance = (TOverload)Activator.CreateInstance(typeof(TOverload))!;
+            var assembly = Assembly.GetExecutingAssembly();
+            var overloadBaseType = typeof(TOverload);
+
+            var concreteType = assembly.GetTypes()
+                .FirstOrDefault(t => !t.IsAbstract && overloadBaseType.IsAssignableFrom(t));
+
+            if (concreteType is null)
+            {
+                throw new InvalidOperationException($"No concrete implementation of {overloadBaseType.FullName} found to determine Tag");
+            }
+
+            var instance = (TOverload)Activator.CreateInstance(concreteType)!;
             return instance.Tag;
         }
 
