@@ -2,49 +2,50 @@ using Script.Core.Expressions;
 using Script.Core.Statements.ControlFlow;
 using Script.Core.Types;
 
-namespace Script.Core.Statements;
-
-public sealed class WhileStatement: IStatement
+namespace Script.Core.Statements
 {
-    private Expression? condition;
-    public Expression? Condition
+    public sealed class WhileStatement: IStatement
     {
-        get => condition;
-        set
+        private Expression? condition;
+        public Expression? Condition
         {
-            var newType = value?.Type ?? ScriptType.Undefined;
-            if (newType != ScriptType.Undefined && newType != ScriptType.Boolean)
+            get => condition;
+            set
             {
-                throw new ArgumentException($"Incorrect condition type {newType}. Expected: {ScriptType.Boolean} or {ScriptType.Undefined}", nameof(Condition));
-            }
-            condition = value;
-        }
-    }
-
-    public SequenceStatement? Body { get; set; }
-
-    public ControlFlowResult Execute()
-    {
-        if (Condition?.Type is not ScriptType.Boolean)
-        {
-            throw new ArgumentException("At runtime condition type must be bool", nameof(Condition));
-        }
-
-        while (Convert.ToBoolean(Condition?.Evaluate()))
-        {
-            var result = Body?.Execute() ?? ControlFlowResult.None;
-            switch (result.Kind)
-            {
-                case ControlFlowKind.Break:
-                    {
-                        return ControlFlowResult.None;
-                    }
-                case ControlFlowKind.Return:
-                    {
-                        return result;
-                    }
+                var newType = value?.Type ?? ScriptType.Undefined;
+                if (newType != ScriptType.Undefined && newType != ScriptType.Boolean)
+                {
+                    throw new ArgumentException($"Incorrect condition type {newType}. Expected: {ScriptType.Boolean} or {ScriptType.Undefined}", nameof(Condition));
+                }
+                condition = value;
             }
         }
-        return ControlFlowResult.None;
+
+        public SequenceStatement? Body { get; set; }
+
+        public ControlFlowResult Execute()
+        {
+            if (Condition?.Type is not ScriptType.Boolean)
+            {
+                throw new ArgumentException("At runtime condition type must be bool", nameof(Condition));
+            }
+
+            while (Convert.ToBoolean(Condition?.Evaluate()))
+            {
+                var result = Body?.Execute() ?? ControlFlowResult.None;
+                switch (result.Kind)
+                {
+                    case ControlFlowKind.Break:
+                        {
+                            return ControlFlowResult.None;
+                        }
+                    case ControlFlowKind.Return:
+                        {
+                            return result;
+                        }
+                }
+            }
+            return ControlFlowResult.None;
+        }
     }
 }

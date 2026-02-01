@@ -1,8 +1,9 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions;
-
-public interface ISelfRegistrableOverload
+namespace Script.Core.Expressions.BinaryExpressions
 {
-    static abstract void Register(ref Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads);
+    public interface ISelfRegistrableOverload
+    {
+        static abstract void Register(ref Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads);
+    }
 }

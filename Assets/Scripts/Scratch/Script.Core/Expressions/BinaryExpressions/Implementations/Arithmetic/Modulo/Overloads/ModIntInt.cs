@@ -1,20 +1,21 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Modulo.Overloads;
-
-public sealed class ModIntInt : ModuloOperator
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Modulo.Overloads
 {
-    protected override object? EvaluateImpl(Expression left, Expression right)
+    public sealed class ModIntInt : ModuloOperator
     {
-        var a = Convert.ToInt32(left.Evaluate());
-        var b = Convert.ToInt32(right.Evaluate());
-        return ((a % b) + b) % b;
-    }
+        protected override object? EvaluateImpl(Expression left, Expression right)
+        {
+            var a = Convert.ToInt32(left.Evaluate());
+            var b = Convert.ToInt32(right.Evaluate());
+            return ((a % b) + b) % b;
+        }
 
-    public ModIntInt()
-    {
-        LeftArg = ScriptType.Integer;
-        RightArg = ScriptType.Integer;
-        ResultType = ScriptType.Integer;
+        public ModIntInt()
+        {
+            LeftArg = ScriptType.Integer;
+            RightArg = ScriptType.Integer;
+            ResultType = ScriptType.Integer;
+        }
     }
 }

@@ -1,27 +1,28 @@
-namespace Script.Core.Expressions.LiteralExpressions;
-
-public sealed class TrueConstant : Expression
+namespace Script.Core.Expressions.LiteralExpressions
 {
-    public TrueConstant()
+    public sealed class TrueConstant : Expression
     {
-        Type = Types.ScriptType.Boolean;
+        public TrueConstant()
+        {
+            Type = Types.ScriptType.Boolean;
+        }
+
+        public override object? Evaluate()
+        {
+            return true;
+        }
     }
 
-    public override object? Evaluate()
+    public sealed class FalseConstant : Expression
     {
-        return true;
-    }
-}
+        public FalseConstant()
+        {
+            Type = Types.ScriptType.Boolean;
+        }
 
-public sealed class FalseConstant : Expression
-{
-    public FalseConstant()
-    {
-        Type = Types.ScriptType.Boolean;
-    }
-
-    public override object? Evaluate()
-    {
-        return false;
+        public override object? Evaluate()
+        {
+            return false;
+        }
     }
 }

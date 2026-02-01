@@ -1,18 +1,24 @@
 using Script.Core.Expressions;
 
-namespace Script.Core.Variables.Implementations;
-
-public sealed class IntVariable() : Variable(Types.ScriptType.Integer)
+namespace Script.Core.Variables.Implementations
 {
-    private int runtimeValue;
-
-    public override object Raw
+    public sealed class IntVariable : Variable
     {
-        get => runtimeValue;
-    }
+        private int runtimeValue;
 
-    public override void Assign(Expression e)
-    {
-        runtimeValue = Convert.ToInt32(e.Evaluate());
+        public override object Raw
+        {
+            get => runtimeValue;
+        }
+
+        public override void Assign(Expression e)
+        {
+            runtimeValue = Convert.ToInt32(e.Evaluate());
+        }
+
+        public IntVariable(): base(Types.ScriptType.Integer)
+        {
+            
+        }
     }
 }

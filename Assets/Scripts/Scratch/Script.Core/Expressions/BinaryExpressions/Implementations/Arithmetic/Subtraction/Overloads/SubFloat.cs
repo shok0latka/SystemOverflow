@@ -1,47 +1,48 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Subtraction.Overloads;
-
-public sealed class SubFloat : SubtractionOperator, ISelfRegistrableOverload
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Subtraction.Overloads
 {
-    protected override void ValidateType(ScriptType left, ScriptType right)
+    public sealed class SubFloat : SubtractionOperator, ISelfRegistrableOverload
     {
-        if (!(left is ScriptType.Float or ScriptType.Integer))
+        protected override void ValidateType(ScriptType left, ScriptType right)
         {
-            throw new ArgumentException($"Left type mismatch: {left}");
-        }
-        if (!(right is ScriptType.Float or ScriptType.Integer))
-        {
-            throw new ArgumentException($"Right type mismatch: {right}");
-        }
-    }
-
-    protected override object? EvaluateImpl(Expression left, Expression right)
-        => Convert.ToSingle(left.Evaluate()) - Convert.ToSingle(right.Evaluate());
-
-    public static void Register(ref Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
-    {
-        var instance = new SubFloat();
-        var keys = new List<(ScriptType, ScriptType)>
-        {
-            (ScriptType.Float, ScriptType.Float),
-            (ScriptType.Integer, ScriptType.Float),
-            (ScriptType.Float, ScriptType.Integer)
-        };
-        foreach (var key in keys)
-        {
-            if (!overloads.TryAdd(key, instance))
+            if (!(left is ScriptType.Float or ScriptType.Integer))
             {
-                throw new InvalidOperationException(
-                    $"Duplicate overload found for {Tag} with key {key}");
+                throw new ArgumentException($"Left type mismatch: {left}");
+            }
+            if (!(right is ScriptType.Float or ScriptType.Integer))
+            {
+                throw new ArgumentException($"Right type mismatch: {right}");
             }
         }
-    }
 
-    public SubFloat()
-    {
-        LeftArg = ScriptType.Float;
-        RightArg = ScriptType.Float;
-        ResultType = ScriptType.Float;
+        protected override object? EvaluateImpl(Expression left, Expression right)
+            => Convert.ToSingle(left.Evaluate()) - Convert.ToSingle(right.Evaluate());
+
+        public static void Register(ref Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
+        {
+            var instance = new SubFloat();
+            var keys = new List<(ScriptType, ScriptType)>
+            {
+                (ScriptType.Float, ScriptType.Float),
+                (ScriptType.Integer, ScriptType.Float),
+                (ScriptType.Float, ScriptType.Integer)
+            };
+            foreach (var key in keys)
+            {
+                if (!overloads.TryAdd(key, instance))
+                {
+                    throw new InvalidOperationException(
+                        $"Duplicate overload found for {Tag} with key {key}");
+                }
+            }
+        }
+
+        public SubFloat()
+        {
+            LeftArg = ScriptType.Float;
+            RightArg = ScriptType.Float;
+            ResultType = ScriptType.Float;
+        }
     }
 }

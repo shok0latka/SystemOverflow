@@ -1,13 +1,14 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.GreaterOrEqual;
-
-public abstract class GreaterOrEqualOperator : BinaryOperatorOverload, ITaggedBinaryOperator
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.GreaterOrEqual
 {
-    public static BinaryOperatorTag Tag => BinaryOperatorTag.GreaterOrEqual;
-
-    protected GreaterOrEqualOperator()
+    public abstract class GreaterOrEqualOperator : BinaryOperatorOverload, ITaggedBinaryOperator
     {
-        ResultType = ScriptType.Boolean;
+        public static BinaryOperatorTag Tag => BinaryOperatorTag.GreaterOrEqual;
+
+        protected GreaterOrEqualOperator()
+        {
+            ResultType = ScriptType.Boolean;
+        }
     }
 }

@@ -1,17 +1,18 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Inequality.Overloads;
-
-public sealed class NotEqualBoolean : NotEqualOperator
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Inequality.Overloads
 {
-    public NotEqualBoolean()
+    public sealed class NotEqualBoolean : NotEqualOperator
     {
-        LeftArg = ScriptType.Boolean;
-        RightArg = ScriptType.Boolean;
-    }
+        public NotEqualBoolean()
+        {
+            LeftArg = ScriptType.Boolean;
+            RightArg = ScriptType.Boolean;
+        }
 
-    protected override object? EvaluateImpl(Expression left, Expression right)
-    {
-        return Convert.ToBoolean(left.Evaluate()) != Convert.ToBoolean(right.Evaluate());
+        protected override object? EvaluateImpl(Expression left, Expression right)
+        {
+            return Convert.ToBoolean(left.Evaluate()) != Convert.ToBoolean(right.Evaluate());
+        }
     }
 }

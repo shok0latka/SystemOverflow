@@ -1,13 +1,14 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Inequality;
-
-public abstract class NotEqualOperator : BinaryOperatorOverload, ITaggedBinaryOperator
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Inequality
 {
-    public static BinaryOperatorTag Tag => BinaryOperatorTag.NotEqual;
-
-    protected NotEqualOperator()
+    public abstract class NotEqualOperator : BinaryOperatorOverload, ITaggedBinaryOperator
     {
-        ResultType = ScriptType.Boolean;
+        public static BinaryOperatorTag Tag => BinaryOperatorTag.NotEqual;
+
+        protected NotEqualOperator()
+        {
+            ResultType = ScriptType.Boolean;
+        }
     }
 }

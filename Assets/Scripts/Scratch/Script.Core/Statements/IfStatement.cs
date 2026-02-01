@@ -2,42 +2,43 @@ using Script.Core.Expressions;
 using Script.Core.Statements.ControlFlow;
 using Script.Core.Types;
 
-namespace Script.Core.Statements;
-
-public sealed class IfStatement : IStatement
+namespace Script.Core.Statements
 {
-    private Expression? condition;
-    public Expression? Condition
+    public sealed class IfStatement : IStatement
     {
-        get => condition;
-        set
+        private Expression? condition;
+        public Expression? Condition
         {
-            var newType = value?.Type ?? ScriptType.Undefined;
-            if (newType != ScriptType.Undefined && newType != ScriptType.Boolean)
+            get => condition;
+            set
             {
-                throw new ArgumentException($"Incorrect condition type {newType}. Expected: {ScriptType.Boolean} or {ScriptType.Undefined}", nameof(Condition));
+                var newType = value?.Type ?? ScriptType.Undefined;
+                if (newType != ScriptType.Undefined && newType != ScriptType.Boolean)
+                {
+                    throw new ArgumentException($"Incorrect condition type {newType}. Expected: {ScriptType.Boolean} or {ScriptType.Undefined}", nameof(Condition));
+                }
+                condition = value;
             }
-            condition = value;
-        }
-    }
-
-    public SequenceStatement? Then { get; set; }
-    public SequenceStatement? Else { get; set; }
-
-    public ControlFlowResult Execute()
-    {
-        if (Condition?.Type is not ScriptType.Boolean)
-        {
-            throw new ArgumentException("At runtime condition type must be bool", nameof(Condition));
         }
 
-        if (Convert.ToBoolean(Condition?.Evaluate()))
+        public SequenceStatement? Then { get; set; }
+        public SequenceStatement? Else { get; set; }
+
+        public ControlFlowResult Execute()
         {
-            return Then?.Execute() ?? ControlFlowResult.None;
-        }
-        else
-        {
-            return Else?.Execute() ?? ControlFlowResult.None;
+            if (Condition?.Type is not ScriptType.Boolean)
+            {
+                throw new ArgumentException("At runtime condition type must be bool", nameof(Condition));
+            }
+
+            if (Convert.ToBoolean(Condition?.Evaluate()))
+            {
+                return Then?.Execute() ?? ControlFlowResult.None;
+            }
+            else
+            {
+                return Else?.Execute() ?? ControlFlowResult.None;
+            }
         }
     }
 }

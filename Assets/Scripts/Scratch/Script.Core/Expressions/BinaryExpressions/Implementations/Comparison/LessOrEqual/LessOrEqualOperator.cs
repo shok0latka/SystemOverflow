@@ -1,13 +1,14 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.LessOrEqual;
-
-public abstract class LessOrEqualOperator : BinaryOperatorOverload, ITaggedBinaryOperator
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.LessOrEqual
 {
-    public static BinaryOperatorTag Tag => BinaryOperatorTag.LessOrEqual;
-
-    protected LessOrEqualOperator()
+    public abstract class LessOrEqualOperator : BinaryOperatorOverload, ITaggedBinaryOperator
     {
-        ResultType = ScriptType.Boolean;
+        public static BinaryOperatorTag Tag => BinaryOperatorTag.LessOrEqual;
+
+        protected LessOrEqualOperator()
+        {
+            ResultType = ScriptType.Boolean;
+        }
     }
 }

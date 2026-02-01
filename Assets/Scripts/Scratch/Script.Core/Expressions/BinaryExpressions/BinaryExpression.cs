@@ -1,65 +1,70 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions;
-
-
-public class BinaryExpression(BinaryOperatorOverloadSystem system): Expression
+namespace Script.Core.Expressions.BinaryExpressions
 {
-    private Expression? leftArg;
-    private Expression? rightArg;
-    private BinaryOperatorOverload? currentOverload;
-    public Expression? LeftArg
+    public class BinaryExpression: Expression
     {
-        get => leftArg;
-        set
+        private Expression? leftArg;
+        private Expression? rightArg;
+        private BinaryOperatorOverload? currentOverload;
+        public Expression? LeftArg
         {
-            leftArg = value;
-            if (leftArg is not null)
+            get => leftArg;
+            set
             {
-                leftArg.Parent = this;
+                leftArg = value;
+                if (leftArg is not null)
+                {
+                    leftArg.Parent = this;
+                }
+                UpdateTypes();
             }
-            UpdateTypes();
         }
-    }
-    public Expression? RightArg
-    {
-        get => rightArg;
-        set
+        public Expression? RightArg
         {
-            rightArg = value;
-            if (rightArg is not null)
+            get => rightArg;
+            set
             {
-                rightArg.Parent = this;
+                rightArg = value;
+                if (rightArg is not null)
+                {
+                    rightArg.Parent = this;
+                }
+                UpdateTypes();
             }
-            UpdateTypes();
         }
-    }
-    public BinaryOperatorTag Tag => System.Tag;
+        public BinaryOperatorTag Tag => System.Tag;
 
-    private BinaryOperatorOverloadSystem System { get; init; } = system;
-    private BinaryOperatorOverload? CurrentOverload
-    {
-        get => currentOverload;
-        set
+        private BinaryOperatorOverloadSystem System { get; init; }
+        private BinaryOperatorOverload? CurrentOverload
         {
-           currentOverload = value;
-           Type = currentOverload?.ResultType ?? ScriptType.Undefined; 
+            get => currentOverload;
+            set
+            {
+            currentOverload = value;
+            Type = currentOverload?.ResultType ?? ScriptType.Undefined; 
+            }
+        } 
+
+        public override void UpdateTypes()
+        {
+            CurrentOverload = System.Resolve(
+                LeftArg?.Type ?? ScriptType.Undefined,
+                RightArg?.Type ?? ScriptType.Undefined
+            );
         }
-    } 
 
-    public override void UpdateTypes()
-    {
-        CurrentOverload = System.Resolve(
-            LeftArg?.Type ?? ScriptType.Undefined,
-            RightArg?.Type ?? ScriptType.Undefined
-        );
-    }
+        public override object? Evaluate()
+        {
+            ArgumentNullException.ThrowIfNull(LeftArg, nameof(LeftArg));
+            ArgumentNullException.ThrowIfNull(RightArg, nameof(RightArg));
+            ArgumentNullException.ThrowIfNull(CurrentOverload, nameof(CurrentOverload));
+            return CurrentOverload.Evaluate(LeftArg, RightArg);
+        }
 
-    public override object? Evaluate()
-    {
-        ArgumentNullException.ThrowIfNull(LeftArg, nameof(LeftArg));
-        ArgumentNullException.ThrowIfNull(RightArg, nameof(RightArg));
-        ArgumentNullException.ThrowIfNull(CurrentOverload, nameof(CurrentOverload));
-        return CurrentOverload.Evaluate(LeftArg, RightArg);
+        public BinaryExpression(BinaryOperatorOverloadSystem system)
+        {
+            System = system;
+        }
     }
 }

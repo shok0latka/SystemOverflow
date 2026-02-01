@@ -1,29 +1,30 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions;
-
-public abstract class Expression
+namespace Script.Core.Expressions
 {
-    private ScriptType type;
-
-    public ScriptType Type
+    public abstract class Expression
     {
-        get => type;
-        set
+        private ScriptType type;
+
+        public ScriptType Type
         {
-            if (value != type)
+            get => type;
+            set
             {
-                type = value;
-                Parent?.UpdateTypes();
+                if (value != type)
+                {
+                    type = value;
+                    Parent?.UpdateTypes();
+                }
             }
         }
-    }
-    public Expression? Parent { get; set; } = null;
+        public Expression? Parent { get; set; } = null;
 
-    public virtual void UpdateTypes()
-    {
-        
-    }
+        public virtual void UpdateTypes()
+        {
+            
+        }
 
-    public abstract object? Evaluate();
+        public abstract object? Evaluate();
+    }
 }

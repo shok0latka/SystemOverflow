@@ -1,9 +1,10 @@
-namespace Script.Core.Statements.ControlFlow;
-
-public enum ControlFlowKind
+namespace Script.Core.Statements.ControlFlow
 {
-    None,
-    Break,
-    Continue,
-    Return
+    public enum ControlFlowKind
+    {
+        None,
+        Break,
+        Continue,
+        Return
+    }
 }

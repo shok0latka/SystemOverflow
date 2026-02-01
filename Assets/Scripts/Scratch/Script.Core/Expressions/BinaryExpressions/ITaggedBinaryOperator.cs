@@ -1,6 +1,7 @@
-namespace Script.Core.Expressions.BinaryExpressions;
-
-public interface ITaggedBinaryOperator
+namespace Script.Core.Expressions.BinaryExpressions
 {
-    static abstract BinaryOperatorTag Tag { get; }
+    public interface ITaggedBinaryOperator
+    {
+        static abstract BinaryOperatorTag Tag { get; }
+    }
 }

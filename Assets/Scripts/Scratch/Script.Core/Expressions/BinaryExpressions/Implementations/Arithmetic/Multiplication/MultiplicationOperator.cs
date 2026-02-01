@@ -1,6 +1,7 @@
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Multiplication;
-
-public abstract class MultiplicationOperator : BinaryOperatorOverload, ITaggedBinaryOperator
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Multiplication
 {
-    public static BinaryOperatorTag Tag => BinaryOperatorTag.Multiplication;
+    public abstract class MultiplicationOperator : BinaryOperatorOverload, ITaggedBinaryOperator
+    {
+        public static BinaryOperatorTag Tag => BinaryOperatorTag.Multiplication;
+    }
 }

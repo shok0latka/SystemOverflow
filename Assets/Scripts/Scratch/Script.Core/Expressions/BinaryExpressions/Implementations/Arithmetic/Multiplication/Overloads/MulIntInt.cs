@@ -1,16 +1,17 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Multiplication.Overloads;
-
-public sealed class MulIntInt : MultiplicationOperator
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Multiplication.Overloads
 {
-    protected override object? EvaluateImpl(Expression left, Expression right)
-        => Convert.ToInt32(left.Evaluate()) * Convert.ToInt32(right.Evaluate());
-
-    public MulIntInt()
+    public sealed class MulIntInt : MultiplicationOperator
     {
-        LeftArg = ScriptType.Integer;
-        RightArg = ScriptType.Integer;
-        ResultType = ScriptType.Integer;
+        protected override object? EvaluateImpl(Expression left, Expression right)
+            => Convert.ToInt32(left.Evaluate()) * Convert.ToInt32(right.Evaluate());
+
+        public MulIntInt()
+        {
+            LeftArg = ScriptType.Integer;
+            RightArg = ScriptType.Integer;
+            ResultType = ScriptType.Integer;
+        }
     }
 }

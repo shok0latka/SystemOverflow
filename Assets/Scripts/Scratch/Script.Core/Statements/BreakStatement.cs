@@ -1,11 +1,12 @@
 using Script.Core.Statements.ControlFlow;
 
-namespace Script.Core.Statements;
-
-public class BreakStatement : IStatement
+namespace Script.Core.Statements
 {
-    public ControlFlowResult Execute()
+    public class BreakStatement : IStatement
     {
-        return ControlFlowResult.Break;
+        public ControlFlowResult Execute()
+        {
+            return ControlFlowResult.Break;
+        }
     }
 }

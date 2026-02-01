@@ -1,10 +1,11 @@
-namespace Script.Core.Types;
-
-public enum ScriptType
+namespace Script.Core.Types
 {
-    Undefined,
-    Float,
-    Integer,
-    String,
-    Boolean
+    public enum ScriptType
+    {
+        Undefined,
+        Float,
+        Integer,
+        String,
+        Boolean
+    }
 }

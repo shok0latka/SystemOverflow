@@ -1,20 +1,21 @@
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.GreaterOrEqual.Overloads;
-
-public sealed class GreaterOrEqualString : GreaterOrEqualOperator
+namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.GreaterOrEqual.Overloads
 {
-    public GreaterOrEqualString()
+    public sealed class GreaterOrEqualString : GreaterOrEqualOperator
     {
-        LeftArg = ScriptType.String;
-        RightArg = ScriptType.String;
-    }
+        public GreaterOrEqualString()
+        {
+            LeftArg = ScriptType.String;
+            RightArg = ScriptType.String;
+        }
 
-    protected override object? EvaluateImpl(Expression left, Expression right)
-    {
-        return string.CompareOrdinal(
-            Convert.ToString(left.Evaluate()),
-            Convert.ToString(right.Evaluate())
-        ) >= 0;
+        protected override object? EvaluateImpl(Expression left, Expression right)
+        {
+            return string.CompareOrdinal(
+                Convert.ToString(left.Evaluate()),
+                Convert.ToString(right.Evaluate())
+            ) >= 0;
+        }
     }
 }

@@ -1,19 +1,20 @@
 using Script.Core.Variables;
 
-namespace Script.Core.Expressions;
-
-public class VariableExpression: Expression
+namespace Script.Core.Expressions
 {
-    public Variable Var { get; set; }
-
-    public override object? Evaluate()
+    public class VariableExpression: Expression
     {
-        return Var.Raw;
-    }
+        public Variable Var { get; set; }
 
-    public VariableExpression(Variable v)
-    {
-        Var = v;
-        Type = Var.Type; // Возможно будут проблемы с обновлением типа
+        public override object? Evaluate()
+        {
+            return Var.Raw;
+        }
+
+        public VariableExpression(Variable v)
+        {
+            Var = v;
+            Type = Var.Type; // Возможно будут проблемы с обновлением типа
+        }
     }
 }
