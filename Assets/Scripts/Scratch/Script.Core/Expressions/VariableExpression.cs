@@ -1,3 +1,6 @@
+#nullable enable
+
+using System;
 using Script.Core.Variables;
 
 namespace Script.Core.Expressions

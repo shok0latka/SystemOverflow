@@ -1,3 +1,7 @@
+#nullable enable
+
+using System;
+using System.Collections.Generic;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Addition.Overloads
@@ -21,7 +25,7 @@ namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.A
             return Convert.ToSingle(left.Evaluate()) + Convert.ToSingle(right.Evaluate());
         }
 
-        public static void Register(ref Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
+        public void Register(Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
         {
             var instance = new AddFloat();
             List<(ScriptType, ScriptType)> keys = new() {

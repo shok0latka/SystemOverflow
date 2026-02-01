@@ -1,3 +1,6 @@
+#nullable enable
+
+using System;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.BinaryExpressions
@@ -11,7 +14,7 @@ namespace Script.Core.Expressions.BinaryExpressions
         public ScriptType LeftArg
         {
             get => leftArg;
-            init => leftArg = 
+            set => leftArg = 
                 value != ScriptType.Undefined ? 
                 value : 
                 throw new ArgumentException(
@@ -23,7 +26,7 @@ namespace Script.Core.Expressions.BinaryExpressions
         public ScriptType RightArg
         {
             get => rightArg;
-            init => rightArg = 
+            set => rightArg = 
                 value != ScriptType.Undefined ? 
                 value : 
                 throw new ArgumentException(
@@ -35,7 +38,7 @@ namespace Script.Core.Expressions.BinaryExpressions
         public ScriptType ResultType
         {
             get => resultType;
-            init => resultType = 
+            set => resultType = 
                 value != ScriptType.Undefined ? 
                 value : 
                 throw new ArgumentException(

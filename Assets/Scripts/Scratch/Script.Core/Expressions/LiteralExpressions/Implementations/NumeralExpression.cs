@@ -1,3 +1,6 @@
+#nullable enable
+
+using System;
 using System.Globalization;
 using Script.Core.Types;
 

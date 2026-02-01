@@ -1,3 +1,7 @@
+#nullable enable
+
+using System;
+
 namespace Script.Core.Expressions.BinaryExpressions
 {
     public enum BinaryOperatorTag

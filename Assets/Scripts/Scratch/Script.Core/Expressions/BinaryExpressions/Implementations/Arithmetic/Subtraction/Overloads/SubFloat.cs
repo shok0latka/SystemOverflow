@@ -1,3 +1,7 @@
+#nullable enable
+
+using System;
+using System.Collections.Generic;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Subtraction.Overloads
@@ -19,7 +23,7 @@ namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.S
         protected override object? EvaluateImpl(Expression left, Expression right)
             => Convert.ToSingle(left.Evaluate()) - Convert.ToSingle(right.Evaluate());
 
-        public static void Register(ref Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
+        public void Register(Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
         {
             var instance = new SubFloat();
             var keys = new List<(ScriptType, ScriptType)>

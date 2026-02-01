@@ -1,3 +1,7 @@
+#nullable enable
+
+using System;
+using System.Collections.Generic;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.GreaterThan.Overloads
@@ -28,7 +32,7 @@ namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.G
                 Convert.ToSingle(right.Evaluate());
         }
 
-        public static void Register(ref Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
+        public void Register(Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
         {
             var instance = new GreaterThanNumeric();
             List<(ScriptType, ScriptType)> keys = new () { 

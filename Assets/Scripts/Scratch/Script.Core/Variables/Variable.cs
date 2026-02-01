@@ -1,3 +1,6 @@
+#nullable enable
+
+using System;
 using Script.Core.Expressions;
 using Script.Core.Types;
 
@@ -5,7 +8,7 @@ namespace Script.Core.Variables
 {
     public abstract class Variable
     {
-        public ScriptType Type { get; init; }
+        public ScriptType Type { get; set; }
 
         public abstract object Raw { get; }
 

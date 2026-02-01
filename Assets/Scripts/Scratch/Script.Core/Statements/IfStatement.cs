@@ -1,3 +1,6 @@
+#nullable enable
+
+using System;
 using Script.Core.Expressions;
 using Script.Core.Statements.ControlFlow;
 using Script.Core.Types;

@@ -1,3 +1,7 @@
+#nullable enable
+
+using System;
+
 namespace Script.Core.Expressions.LiteralExpressions
 {
     public abstract class UserInputExpression : Expression

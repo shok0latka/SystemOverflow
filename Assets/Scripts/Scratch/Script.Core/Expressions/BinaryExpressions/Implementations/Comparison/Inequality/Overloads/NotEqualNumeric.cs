@@ -1,3 +1,7 @@
+#nullable enable
+
+using System;
+using System.Collections.Generic;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Inequality.Overloads
@@ -30,7 +34,7 @@ namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.I
             ) >= 1e-6f;
         }
 
-        public static void Register(ref Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
+        public void Register(Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
         {
             var instance = new NotEqualNumeric();
             List<(ScriptType, ScriptType)> keys = new () { 

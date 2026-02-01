@@ -1,3 +1,8 @@
+#nullable enable
+
+using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Reflection;
 using Script.Core.Types;
 
@@ -5,7 +10,7 @@ namespace Script.Core.Expressions.BinaryExpressions
 {
     public abstract class BinaryOperatorOverloadSystem
     {
-        public BinaryOperatorTag Tag { get; init; }
+        public BinaryOperatorTag Tag { get; set; }
 
         protected Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads = new();
 
@@ -23,9 +28,15 @@ namespace Script.Core.Expressions.BinaryExpressions
     public class BinaryOperatorOverloadSystem<TOverload> : BinaryOperatorOverloadSystem
         where TOverload : BinaryOperatorOverload, ITaggedBinaryOperator
     {
-        public BinaryOperatorOverloadSystem() : base(TOverload.Tag)
+        public BinaryOperatorOverloadSystem() : base(CreateTag())
         {
             RegisterAllOverloadsFromAssembly(Assembly.GetExecutingAssembly());
+        }
+
+        private static BinaryOperatorTag CreateTag()
+        {
+            var instance = (TOverload)Activator.CreateInstance(typeof(TOverload))!;
+            return instance.Tag;
         }
 
         private void RegisterAllOverloadsFromAssembly(Assembly assembly)
@@ -62,14 +73,14 @@ namespace Script.Core.Expressions.BinaryExpressions
 
         private void InvokeSelfRegister(Type type)
         {
-            var method = type.GetMethod(
-                nameof(ISelfRegistrableOverload.Register),
-                BindingFlags.Public | BindingFlags.Static) ?? throw new InvalidOperationException(
+            var instance = (BinaryOperatorOverload)Activator.CreateInstance(type)!;
+            if (instance is not ISelfRegistrableOverload registrable)
+            {
+                throw new InvalidOperationException(
                     $"Type {type.FullName} implements ISelfRegistrableOverload but does not define Register");
-            var args = new object[] { overloads };
-            method.Invoke(null, args);
+            }
 
-            overloads = (Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload>)args[0];
+            registrable.Register(overloads);
         }
 
         private void RegisterDefault(Type type)

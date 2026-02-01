@@ -1,3 +1,6 @@
+#nullable enable
+
+using System;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.BinaryExpressions
@@ -33,9 +36,9 @@ namespace Script.Core.Expressions.BinaryExpressions
                 UpdateTypes();
             }
         }
-        public BinaryOperatorTag Tag => System.Tag;
+        public BinaryOperatorTag Tag => system.Tag;
 
-        private BinaryOperatorOverloadSystem System { get; init; }
+        private BinaryOperatorOverloadSystem system;
         private BinaryOperatorOverload? CurrentOverload
         {
             get => currentOverload;
@@ -48,7 +51,7 @@ namespace Script.Core.Expressions.BinaryExpressions
 
         public override void UpdateTypes()
         {
-            CurrentOverload = System.Resolve(
+            CurrentOverload = system.Resolve(
                 LeftArg?.Type ?? ScriptType.Undefined,
                 RightArg?.Type ?? ScriptType.Undefined
             );
@@ -56,15 +59,24 @@ namespace Script.Core.Expressions.BinaryExpressions
 
         public override object? Evaluate()
         {
-            ArgumentNullException.ThrowIfNull(LeftArg, nameof(LeftArg));
-            ArgumentNullException.ThrowIfNull(RightArg, nameof(RightArg));
-            ArgumentNullException.ThrowIfNull(CurrentOverload, nameof(CurrentOverload));
+            if (LeftArg is null)
+            {
+                throw new ArgumentNullException(nameof(LeftArg));
+            }
+            if (RightArg is null)
+            {
+                throw new ArgumentNullException(nameof(RightArg));
+            }
+            if (CurrentOverload is null)
+            {
+                throw new ArgumentNullException(nameof(CurrentOverload));
+            }
             return CurrentOverload.Evaluate(LeftArg, RightArg);
         }
 
         public BinaryExpression(BinaryOperatorOverloadSystem system)
         {
-            System = system;
+            this.system = system;
         }
     }
 }

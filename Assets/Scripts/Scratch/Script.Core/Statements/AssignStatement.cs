@@ -1,3 +1,6 @@
+#nullable enable
+
+using System;
 using Script.Core.Expressions;
 using Script.Core.Statements.ControlFlow;
 using Script.Core.Types;
@@ -9,7 +12,7 @@ namespace Script.Core.Statements
     {
         private Expression? toAssign;
 
-        public required Variable Var { get; init; }
+        public Variable Var { get; set; }
         public Expression? ToAssign
         {
             get => toAssign;

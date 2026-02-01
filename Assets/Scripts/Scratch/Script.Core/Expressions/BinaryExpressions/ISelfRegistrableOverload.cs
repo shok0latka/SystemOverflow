@@ -1,9 +1,13 @@
+#nullable enable
+
+using System;
+using System.Collections.Generic;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.BinaryExpressions
 {
     public interface ISelfRegistrableOverload
     {
-        static abstract void Register(ref Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads);
+        void Register(Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads);
     }
 }

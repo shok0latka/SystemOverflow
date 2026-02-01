@@ -1,3 +1,7 @@
+#nullable enable
+
+using System;
+using System.Collections.Generic;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Equality.Overloads
@@ -22,7 +26,7 @@ namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.E
             }
         }
 
-        public static void Register(ref Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
+        public void Register(Dictionary<(ScriptType, ScriptType), BinaryOperatorOverload> overloads)
         {
             var instance = new EqualNumeric();
             List<(ScriptType, ScriptType)> keys = new () { 
