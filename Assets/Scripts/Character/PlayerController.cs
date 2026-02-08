@@ -11,25 +11,37 @@ public class PlayerController : MonoBehaviour
         interactor = GetComponent<PlayerInteractor>();
     }
 
-    // Взаимодействеи, бег и приседание, по базе
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.E))
         {
-            interactor.TryInteract();
+            bool hacked = interactor != null && interactor.TryHackNearestEnemy();
+            if (!hacked && interactor != null)
+            {
+                interactor.TryInteract();
+            }
         }
+
+        if (movement == null)
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
             movement.Crouch(true);
         }
+
         if (Input.GetKeyUp(KeyCode.LeftShift))
         {
             movement.Crouch(false);
         }
+
         if (Input.GetKeyDown(KeyCode.LeftControl))
         {
             movement.SpeedUp(true);
         }
+
         if (Input.GetKeyUp(KeyCode.LeftControl))
         {
             movement.SpeedUp(false);
