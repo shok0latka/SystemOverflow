@@ -73,3 +73,8 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Scratch addition for testing/debugging
+Assets/Scripts/Scratch/Script.Main/*
+Assets/Scripts/Scratch/Script.Core/bin/*
+Assets/Scripts/Scratch/Script.Core/obj/*
