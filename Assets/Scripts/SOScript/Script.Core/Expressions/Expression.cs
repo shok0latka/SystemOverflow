@@ -29,5 +29,17 @@ namespace Script.Core.Expressions
         }
 
         public abstract object? Evaluate();
+
+        public abstract int Arity();
+
+        protected abstract void SetInput(int index, Expression? value);
+
+        protected abstract Expression? GetInput(int index);
+
+        public Expression? this[int index]
+        {
+            get => GetInput(index);
+            set => SetInput(index, value);
+        }
     }
 }

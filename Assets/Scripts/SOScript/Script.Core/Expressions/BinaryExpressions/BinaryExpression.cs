@@ -74,6 +74,36 @@ namespace Script.Core.Expressions.BinaryExpressions
             return CurrentOverload.Evaluate(LeftArg, RightArg);
         }
 
+        public override int Arity()
+        {
+            return 2;
+        }
+
+        protected override void SetInput(int index, Expression? value)
+        {
+            switch (index)
+            {
+                case 0: 
+                    LeftArg = value;
+                    break;
+                case 1:
+                    RightArg = value;
+                    break;
+                default:
+                    throw new IndexOutOfRangeException();
+            }
+        }
+
+        protected override Expression? GetInput(int index)
+        {
+            return index switch
+            {
+                0 => LeftArg,
+                1 => RightArg,
+                _ => throw new IndexOutOfRangeException()
+            };
+        }
+
         public BinaryExpression(BinaryOperatorOverloadSystem system)
         {
             this.system = system;
