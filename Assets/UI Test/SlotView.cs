@@ -29,6 +29,8 @@ public class SlotView : VisualElement
         });
     }
 
+    
+
     public void SetChild(ExpressionBlockView block)
     {
         Debug.Log($"[SlotView] SetChild -> {block.DebugName} -> {ParentBlock.DebugName}[{Index}]");
@@ -39,10 +41,7 @@ public class SlotView : VisualElement
         }
 
         block.RemoveFromHierarchy();
-
-        block.style.position = Position.Relative;
-        block.style.left = StyleKeyword.Null;
-        block.style.top = StyleKeyword.Null;
+        block.AttachToSlot();
 
         ClearChild();
 
@@ -52,6 +51,16 @@ public class SlotView : VisualElement
         ParentBlock.Expression[Index] = block.Expression;
 
         Add(block);
+    }
+
+    public ExpressionBlockView? ReplaceChild(ExpressionBlockView newBlock)
+    {
+        var old = ChildBlock;
+
+        ClearChild();
+        SetChild(newBlock);
+
+        return old;
     }
 
     public void ClearChild()

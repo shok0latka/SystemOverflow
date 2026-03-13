@@ -63,6 +63,23 @@ public class ExpressionBlockView : VisualElement
         BuildUserInput(expr, "str:");
     }
 
+    public void AttachToSlot()
+    {
+        style.position = Position.Relative;
+        style.left = StyleKeyword.Null;
+        style.top = StyleKeyword.Null;
+    }
+
+    public void MakeFree(Vector2 pos)
+    {
+        style.position = Position.Absolute;
+
+        var size = resolvedStyle;
+
+        style.left = pos.x - size.width / 2;
+        style.top = pos.y - size.height / 2;
+    }
+
     void BuildUserInput(UserInputExpression expr, string prefix)
     {
         var label = new Label(prefix);

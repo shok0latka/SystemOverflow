@@ -12,22 +12,26 @@ public class ExpressionGraphController
     public ExpressionBlockView? SelectedBlock;
     public SlotView? SelectedSlot;
 
+    void ToggleSelection<T>(T element, ref T? selected) where T : VisualElement
+    {
+        if (selected == element)
+        {
+            element.RemoveFromClassList("expr-selected");
+            selected = null;
+            return;
+        }
+
+        selected?.RemoveFromClassList("expr-selected");
+
+        selected = element;
+        element.AddToClassList("expr-selected");
+    }
+
     public void SelectBlock(ExpressionBlockView block)
     {
         Debug.Log($"[GraphController] SelectBlock -> {block.DebugName}");
 
-        if (SelectedBlock == block)
-        {
-            block.RemoveFromClassList("expr-selected");
-            SelectedBlock = null;
-            Debug.Log($"[GraphController] Block deselected");
-            return;
-        }
-
-        SelectedBlock?.RemoveFromClassList("expr-selected");
-
-        SelectedBlock = block;
-        block.AddToClassList("expr-selected");
+        ToggleSelection(block, ref SelectedBlock);
 
         TryConnect();
     }
@@ -36,18 +40,7 @@ public class ExpressionGraphController
     {
         Debug.Log($"[GraphController] SelectSlot -> {slot.ParentBlock.DebugName}[{slot.Index}]");
 
-        if (SelectedSlot == slot)
-        {
-            slot.RemoveFromClassList("expr-selected");
-            SelectedSlot = null;
-            Debug.Log($"[GraphController] Slot deselected");
-            return;
-        }
-
-        SelectedSlot?.RemoveFromClassList("expr-selected");
-
-        SelectedSlot = slot;
-        slot.AddToClassList("expr-selected");
+        ToggleSelection(slot, ref SelectedSlot);
 
         TryConnect();
     }
@@ -61,12 +54,7 @@ public class ExpressionGraphController
 
         DetachBlock(SelectedBlock);
 
-        SelectedBlock.style.position = Position.Absolute;
-
-        var size = SelectedBlock.resolvedStyle;
-
-        SelectedBlock.style.left = mousePosition.x - size.width / 2;
-        SelectedBlock.style.top = mousePosition.y - size.height / 2;
+        SelectedBlock.MakeFree(mousePosition);
 
         SelectedBlock.RemoveFromClassList("expr-selected");
         SelectedBlock = null;
@@ -107,11 +95,9 @@ public class ExpressionGraphController
 
         if (WouldCreateCycle(parentExpr, childExpr))
         {
-            Debug.LogWarning("[GraphController] Connection rejected (cycle detected)");
-
+            Debug.LogWarning($"[GraphController] Connection rejected: cycle detected for {block.DebugName}");
             SelectedSlot?.RemoveFromClassList("expr-selected");
             SelectedBlock?.RemoveFromClassList("expr-selected");
-
             SelectedBlock = null;
             SelectedSlot = null;
             return;
@@ -119,23 +105,19 @@ public class ExpressionGraphController
 
         if (block.ParentSlot != null && block.ParentSlot != slot)
         {
+            Debug.Log($"[GraphController] Detach {block.DebugName} from previous slot {block.ParentSlot.Index}");
             block.ParentSlot.ClearChild();
             GraphRoot.Instance?.AddFreeBlock(block);
         }
 
-        if (slot.ChildBlock != null)
+        var replaced = slot.ReplaceChild(block);
+        if (replaced != null)
         {
-            var oldBlock = slot.ChildBlock;
-
-            Debug.Log($"[GraphController] Replace block -> {oldBlock.DebugName}");
-
-            slot.ClearChild();
-            GraphRoot.Instance?.AddFreeBlock(oldBlock);
+            Debug.Log($"[GraphController] Slot occupied, freeing block {replaced.DebugName}");
+            GraphRoot.Instance?.AddFreeBlock(replaced);
         }
 
-        slot.SetChild(block);
-
-        Debug.Log("[GraphController] Connect success");
+        Debug.Log($"[GraphController] Connect success: {block.DebugName} -> {slot.ParentBlock.DebugName}[{slot.Index}]");
     }
 
     bool WouldCreateCycle(Expression parent, Expression child)
