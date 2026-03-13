@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Threading.Tasks;
 using Script.Core.Expressions;
 using Script.Core.Types;
 
@@ -24,6 +25,16 @@ namespace Script.Core.Variables
             ValidateType(e.Type);
             Assign(e);
         }
+
+        public async Task UpdateAsync(Expression e)
+        {
+            if (e is null)
+                throw new ArgumentNullException(nameof(e));
+
+            ValidateType(e.Type);
+            await AssignAsync(e);
+        }
+
     //TODO Сделать return bool
         public virtual void ValidateType(ScriptType type)
         {
@@ -34,5 +45,7 @@ namespace Script.Core.Variables
         } 
 
         public abstract void Assign(Expression e);
+
+        public abstract Task AssignAsync(Expression e);
     }
 }

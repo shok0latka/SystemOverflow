@@ -4,12 +4,18 @@ using System;
 using Script.Core.Statements.ControlFlow;
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Script.Core.Statements
 {
     public interface IStatement
     {
         ControlFlowResult Execute();
+
+        Task<ControlFlowResult> ExecuteAsync();
+
+        event Func<Task>? OnExecuteAsync;
+
         IStatement? Next { get; set; }
         IReadOnlyList<StatementArgument> Arguments { get; }
     }
@@ -25,6 +31,12 @@ namespace Script.Core.Statements
 
             current.Next = next;
 
+            return statement;
+        }
+
+        public static IStatement RegisterExecutionCallback(this IStatement statement, Func<Task> callback)
+        {
+            statement.OnExecuteAsync += callback;
             return statement;
         }
     }

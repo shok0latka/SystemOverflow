@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Script.Core.Expressions;
 using Script.Core.Statements.ControlFlow;
 using Script.Core.Types;
@@ -10,6 +11,7 @@ namespace Script.Core.Statements
 {
     public sealed class IfStatement : IStatement
     {
+        public event Func<Task>? OnExecuteAsync;
 
         public List<StatementArgument> Arguments { get; } = new() { 
             new StatementArgument("Condition", new List<ScriptType> { ScriptType.Boolean }) 
@@ -47,6 +49,31 @@ namespace Script.Core.Statements
             }
 
             return Next?.Execute() ?? ControlFlowResult.None;
+        }
+
+        public async Task<ControlFlowResult> ExecuteAsync()
+        {
+            if (OnExecuteAsync != null)
+                await OnExecuteAsync();
+
+            var conditionValue = Condition is null ? false : Convert.ToBoolean(await Condition.EvaluateAsync());
+
+            ControlFlowResult result;
+            if (conditionValue)
+            {
+                result = await (Do?.ExecuteAsync() ?? Task.FromResult(ControlFlowResult.None));
+            }
+            else
+            {
+                result = await (Else?.ExecuteAsync() ?? Task.FromResult(ControlFlowResult.None));
+            }
+
+            if (result.Kind != ControlFlowKind.None)
+            {
+                return result;
+            }
+
+            return await (Next?.ExecuteAsync() ?? Task.FromResult(ControlFlowResult.None));
         }
     }
 }

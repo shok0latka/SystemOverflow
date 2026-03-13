@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Threading.Tasks;
 using Script.Core.Expressions;
 using Script.Core.Types;
 
@@ -26,6 +27,12 @@ namespace Script.Core.Variables.Implementations
         public override void Assign(Expression e)
         {
             runtimeValue = Convert.ToSingle(e.Evaluate());
+        }
+
+        public override async Task AssignAsync(Expression e)
+        {
+            var result = await e.EvaluateAsync();
+            runtimeValue = Convert.ToSingle(result);
         }
 
         public FloatVariable(string name): base(ScriptType.Float, name)

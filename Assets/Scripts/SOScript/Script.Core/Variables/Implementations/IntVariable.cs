@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Threading.Tasks;
 using Script.Core.Expressions;
 
 namespace Script.Core.Variables.Implementations
@@ -17,6 +18,12 @@ namespace Script.Core.Variables.Implementations
         public override void Assign(Expression e)
         {
             runtimeValue = Convert.ToInt32(e.Evaluate());
+        }
+
+        public override async Task AssignAsync(Expression e)
+        {
+            var result = await e.EvaluateAsync();
+            runtimeValue = Convert.ToInt32(result);
         }
 
         public IntVariable(string name): base(Types.ScriptType.Integer, name)
