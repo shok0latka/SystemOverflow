@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Threading.Tasks;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.BinaryExpressions
@@ -59,6 +60,29 @@ namespace Script.Core.Expressions.BinaryExpressions
 
         public override object? Evaluate()
         {
+            if (LeftArg is null)
+            {
+                throw new ArgumentNullException(nameof(LeftArg));
+            }
+            if (RightArg is null)
+            {
+                throw new ArgumentNullException(nameof(RightArg));
+            }
+            if (CurrentOverload is null)
+            {
+                throw new ArgumentNullException(nameof(CurrentOverload));
+            }
+            InvokeOnEvaluate();
+            return CurrentOverload.Evaluate(LeftArg, RightArg);
+        }
+
+        public override async Task<object?> EvaluateAsync()
+        {
+            await InvokeOnEvaluateAsync();
+            if (LeftArg != null)
+                await LeftArg.EvaluateAsync();
+            if (RightArg != null)
+                await RightArg.EvaluateAsync();
             if (LeftArg is null)
             {
                 throw new ArgumentNullException(nameof(LeftArg));

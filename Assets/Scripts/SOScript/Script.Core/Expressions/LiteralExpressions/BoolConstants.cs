@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Threading.Tasks;
 
 namespace Script.Core.Expressions.LiteralExpressions
 {
@@ -13,6 +14,13 @@ namespace Script.Core.Expressions.LiteralExpressions
 
         public override object? Evaluate()
         {
+            InvokeOnEvaluate();
+            return true;
+        }
+
+        public override async Task<object?> EvaluateAsync()
+        {
+            await InvokeOnEvaluateAsync();
             return true;
         }
 
@@ -41,6 +49,13 @@ namespace Script.Core.Expressions.LiteralExpressions
 
         public override object? Evaluate()
         {
+            InvokeOnEvaluate();
+            return false;
+        }
+
+        public override async Task<object?> EvaluateAsync()
+        {
+            await InvokeOnEvaluateAsync();
             return false;
         }
 

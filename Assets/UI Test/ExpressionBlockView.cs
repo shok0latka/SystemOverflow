@@ -8,6 +8,8 @@ using UnityEngine.UIElements;
 using UnityEngine;
 using Script.Core.Expressions.LiteralExpressions.Implementations;
 using Script.Core.Expressions.LiteralExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 public class ExpressionBlockView : VisualElement
 {
@@ -31,6 +33,18 @@ public class ExpressionBlockView : VisualElement
             evt.StopPropagation();
             ExpressionGraphController.Instance.SelectBlock(this);
         });
+
+        expression.RegisterEvaluateCallback(async () => await PlayEvaluatePulse(100));
+    }
+
+    public async Task PlayEvaluatePulse(int delayMs)
+    {
+
+        AddToClassList("expr-eval");
+
+        await Task.Delay(delayMs);
+
+        schedule.Execute(() => { RemoveFromClassList("expr-eval"); }).ExecuteLater(200);
     }
 
     public ExpressionBlockView(BinaryExpression expression, string? debugName = null) : this((Expression)expression, debugName)

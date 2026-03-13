@@ -12,6 +12,14 @@
     border-color: rgb(25,25,25);
 
     padding: 2px;
+
+    transition-property: border-color;
+    transition-duration: 0.15s;
+}
+
+.expr-eval
+{
+    border-color: rgb(255,200,0);
 }
 
 .expr-slot
@@ -49,4 +57,17 @@
     flex-grow: 0;
     flex-shrink: 0;
     width: 60px;
+}
+
+.expr-toolbar
+{
+    flex-direction: row;
+    height: 30px;
+
+    background-color: rgb(40,40,40);
+
+    padding-left: 6px;
+    padding-right: 6px;
+
+    align-items: center;
 }

@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Threading.Tasks;
 
 namespace Script.Core.Expressions.LiteralExpressions
 {
@@ -33,5 +34,7 @@ namespace Script.Core.Expressions.LiteralExpressions
         }
 
         protected abstract void Reparse();
+
+        public abstract override Task<object?> EvaluateAsync();
     }
 }
