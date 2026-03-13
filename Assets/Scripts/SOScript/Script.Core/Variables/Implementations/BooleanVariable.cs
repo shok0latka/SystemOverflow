@@ -20,7 +20,7 @@ namespace Script.Core.Variables.Implementations
             runtimeValue = Convert.ToBoolean(e.Evaluate());
         }
 
-        public BooleanVariable(): base(ScriptType.Boolean)
+        public BooleanVariable(string name): base(ScriptType.Boolean, name)
         {
             
         }

@@ -8,9 +8,14 @@ namespace Script.Core.Statements
 {
     public sealed class SequenceStatement : IStatement
     {
-        private readonly List<IStatement> statements = new ();
+        public List<StatementArgument> Arguments { get; } = new();
 
+        public IStatement? Next { get; set; }
+
+        private readonly List<IStatement> statements = new ();
         public IReadOnlyList<IStatement> Statements => statements;
+
+        IReadOnlyList<StatementArgument> IStatement.Arguments => Arguments;
 
         public void Insert(int index, IStatement statement)
         {

@@ -19,7 +19,7 @@ namespace Script.Core.Variables.Implementations
             runtimeValue = Convert.ToString(e.Evaluate()) ?? string.Empty;
         }
 
-        public StringVariable(): base(Types.ScriptType.String)
+        public StringVariable(string name): base(Types.ScriptType.String, name)
         {
             
         }

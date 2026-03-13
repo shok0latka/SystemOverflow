@@ -9,12 +9,14 @@ namespace Script.Core.Variables
     public abstract class Variable
     {
         public ScriptType Type { get; set; }
+        public string Name { get; private set; }
 
         public abstract object Raw { get; }
 
-        protected Variable(ScriptType type)
+        protected Variable(ScriptType type, string name)
         {
             Type = type;
+            Name = name;
         }
     //TODO Сделать метод TryUpdate
         public void Update(Expression e)

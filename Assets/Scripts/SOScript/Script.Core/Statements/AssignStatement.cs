@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using Script.Core.Expressions;
 using Script.Core.Statements.ControlFlow;
 using Script.Core.Types;
@@ -8,34 +9,32 @@ using Script.Core.Variables;
 
 namespace Script.Core.Statements
 {
-    public sealed class AssignStatement : IStatement
+    public sealed class AssignStatement: IStatement
     {
-        private Expression? toAssign;
+        public Variable Var { get; private set; }
 
-        public Variable Var { get; set; }
-        public Expression? ToAssign
+        public List<StatementArgument> Arguments { get; } = new();
+
+        public IStatement? Next { get; set; } = null;
+
+        public AssignStatement(Variable var)
         {
-            get => toAssign;
-            set
-            {
-                var newType = value?.Type ?? ScriptType.Undefined;
-                if (newType != ScriptType.Undefined && newType != Var.Type)
-                {
-                    throw new ArgumentException($"Incorrect assign expression type: {newType}. Expected: {Var.Type} or {ScriptType.Undefined}", nameof(ToAssign));
-                }
-                toAssign = value;
-            }
-        } 
+            Var = var;
+            Arguments.Add(new StatementArgument("Value", new List<ScriptType> { var.Type }));
+        }
+
+        public Expression ToAssign
+        {
+            get => Arguments[0];
+            set => Arguments[0].Attached = value;
+        }
+
+        IReadOnlyList<StatementArgument> IStatement.Arguments => Arguments;
 
         public ControlFlowResult Execute()
         {
-            var type = ToAssign?.Type ?? ScriptType.Undefined;
-            if (type != Var.Type)
-            {
-                throw new ArgumentException($"At runtime assign expression type required to be {Var.Type}");
-            }
             Var.Assign(ToAssign!);
-            return ControlFlowResult.None;
+            return Next?.Execute() ?? ControlFlowResult.None;
         }
     }
 }

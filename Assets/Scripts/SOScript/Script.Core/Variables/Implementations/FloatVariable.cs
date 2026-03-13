@@ -28,7 +28,7 @@ namespace Script.Core.Variables.Implementations
             runtimeValue = Convert.ToSingle(e.Evaluate());
         }
 
-        public FloatVariable(): base(ScriptType.Float)
+        public FloatVariable(string name): base(ScriptType.Float, name)
         {
 
         }

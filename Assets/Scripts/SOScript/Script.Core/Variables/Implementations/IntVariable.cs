@@ -19,7 +19,7 @@ namespace Script.Core.Variables.Implementations
             runtimeValue = Convert.ToInt32(e.Evaluate());
         }
 
-        public IntVariable(): base(Types.ScriptType.Integer)
+        public IntVariable(string name): base(Types.ScriptType.Integer, name)
         {
             
         }
