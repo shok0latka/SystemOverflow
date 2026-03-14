@@ -18,12 +18,17 @@ public class StatementBlockView : VisualElement, IExpressionSlotHost
 
     public StmtSlotView? ParentSlot = null;
 
+    readonly VisualElement content;
+
     public StatementBlockView(IStatement statement, string? debugName = null)
     {
         Statement = statement;
         DebugName = debugName ?? Guid.NewGuid().ToString();
 
-        AddToClassList("stmt-block");
+        content = new VisualElement();
+        content.AddToClassList("stmt-block");
+
+        Add(content);
 
         RegisterCallback<ClickEvent>(evt =>
         {
@@ -32,74 +37,89 @@ public class StatementBlockView : VisualElement, IExpressionSlotHost
         });
 
         Statement.RegisterExecutionCallback(async () => await PlayExecutePulse(100));
+        BuildTitle(statement.Name);
+        BuildExpressionArguments();
+    }
 
-        BuildView();
+    public StatementBlockView(PrintStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
+    {
+        BuildNextSlot();
+    }
+
+    public StatementBlockView(AssignStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
+    {
+        BuildNextSlot();
+    }
+
+    public StatementBlockView(IfStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
+    {
+        BuildStatementSlot("Do:", StmtSlotKind.Do);
+        BuildStatementSlot("Else:", StmtSlotKind.Else);
+
+        BuildNextSlot();
+    }
+
+    public StatementBlockView(WhileStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
+    {
+        BuildStatementSlot("Body:", StmtSlotKind.Body);
+
+        BuildNextSlot();
+    }
+
+    void BuildTitle(string text)
+    {
+        var title = new Label(text);
+        title.AddToClassList("stmt-title");
+        content.Add(title);
+    }
+
+    void BuildExpressionArguments()
+    {
+        for (int i = 0; i < Statement.Arguments.Count; i++)
+        {
+            var arg = Statement.Arguments[i];
+
+            var label = new Label(arg.Name + ":");
+            label.AddToClassList("stmt-arg-label");
+            content.Add(label);
+
+            var slot = new ExprSlotView(this, i);
+            ExprSlots.Add(slot);
+            content.Add(slot);
+        }
+    }
+
+    void BuildStatementSlot(string labelText, StmtSlotKind kind)
+    {
+        var label = new Label(labelText);
+        label.AddToClassList("stmt-arg-label");
+        content.Add(label);
+
+        var slot = new StmtSlotView(this, kind);
+        StmtSlots.Add(slot);
+        content.Add(slot);
+    }
+
+    void BuildNextSlot()
+    {
+        var label = new Label("Next:");
+        label.AddToClassList("stmt-arg-label");
+
+        var slot = new StmtSlotView(this, StmtSlotKind.Next);
+
+        StmtSlots.Add(slot);
+
+        content.Add(label);
+        Add(slot);
     }
 
     public async Task PlayExecutePulse(int delayMs)
     {
-        AddToClassList("stmt-eval");
+        content.AddToClassList("stmt-eval");
 
         await Task.Delay(delayMs);
 
-        schedule.Execute(() => { RemoveFromClassList("stmt-eval"); }).ExecuteLater(200);
-    }
-
-    void BuildView()
-    {
-        var title = new Label(GetStatementTitle());
-        title.AddToClassList("stmt-title");
-        Add(title);
-
-        for (int i = 0; i < Statement.Arguments.Count; i++)
-        {
-            var arg = Statement.Arguments[i];
-            var label = new Label(arg.Name + ":");
-            label.AddToClassList("stmt-arg-label");
-            Add(label);
-
-            var slot = new ExprSlotView(this, i);
-            ExprSlots.Add(slot);
-            Add(slot);
-        }
-
-        if (Statement is IfStatement)
-        {
-            var doSlot = new StmtSlotView(this, StmtSlotKind.Do);
-            StmtSlots.Add(doSlot);
-            Add(new Label("Do:"));
-            Add(doSlot);
-
-            var elseSlot = new StmtSlotView(this, StmtSlotKind.Else);
-            StmtSlots.Add(elseSlot);
-            Add(new Label("Else:"));
-            Add(elseSlot);
-        }
-
-        if (Statement is WhileStatement)
-        {
-            var bodySlot = new StmtSlotView(this, StmtSlotKind.Body);
-            StmtSlots.Add(bodySlot);
-            Add(new Label("Body:"));
-            Add(bodySlot);
-        }
-
-        var nextSlot = new StmtSlotView(this, StmtSlotKind.Next);
-        StmtSlots.Add(nextSlot);
-        Add(new Label("Next:"));
-        Add(nextSlot);
-    }
-
-    string GetStatementTitle()
-    {
-        return Statement switch
-        {
-            PrintStatement => "Print",
-            AssignStatement assign => $"Assign ({assign.Var.Name})",
-            IfStatement => "If",
-            WhileStatement => "While",
-            _ => "Statement"
-        };
+        schedule.Execute(() => { content.RemoveFromClassList("stmt-eval"); }).ExecuteLater(200);
     }
 
     public void SetExpression(int index, Expression? expression)
@@ -173,7 +193,7 @@ public class StatementBlockView : VisualElement, IExpressionSlotHost
     {
         style.position = Position.Absolute;
 
-        var size = resolvedStyle;
+        var size = content.resolvedStyle;
 
         style.left = pos.x - size.width / 2;
         style.top = pos.y - size.height / 2;

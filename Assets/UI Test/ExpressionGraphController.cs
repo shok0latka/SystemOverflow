@@ -2,6 +2,7 @@
 
 using System;
 using Script.Core.Expressions;
+using Script.Core.Statements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -146,6 +147,12 @@ public class ExpressionGraphController
 
         Debug.Log($"[GraphController] Connect -> {block.DebugName} -> {slot.ParentHost.DebugName}[{slot.Index}]");
 
+        if (slot.ParentHost is ExpressionBlockView eqHost && eqHost == block)
+        {
+            Debug.LogWarning($"[GraphController] Connection rejected: cannot attach expression block '{block.DebugName}' to its own slot.");
+            return;
+        }
+
         if (parentExpr != null && WouldCreateCycle(parentExpr, childExpr))
         {
             Debug.LogWarning($"[GraphController] Connection rejected: cycle detected for {block.DebugName}");
@@ -172,6 +179,12 @@ public class ExpressionGraphController
     void Connect(StatementBlockView block, StmtSlotView slot)
     {
         Debug.Log($"[GraphController] Connect statement -> {block.DebugName} -> {slot.ParentBlock.DebugName}:{slot.Kind}");
+
+        if (slot.ParentBlock == block || WouldCreateStatementCycle(slot.ParentBlock.Statement, block.Statement))
+        {
+            Debug.LogWarning($"[GraphController] Connection rejected: cannot attach statement '{block.DebugName}' to its own slot '{slot.ParentBlock.DebugName}:{slot.Kind}' (cycle risk).");
+            return;
+        }
 
         if (block.ParentSlot != null && block.ParentSlot != slot)
         {
@@ -202,6 +215,30 @@ public class ExpressionGraphController
             var input = child[i];
 
             if (input != null && WouldCreateCycle(parent, input))
+                return true;
+        }
+
+        return false;
+    }
+
+    bool WouldCreateStatementCycle(IStatement parent, IStatement child)
+    {
+        if (ReferenceEquals(parent, child))
+            return true;
+
+        if (child.Next != null && WouldCreateStatementCycle(parent, child.Next))
+            return true;
+
+        if (child is IfStatement ifStmt)
+        {
+            if (ifStmt.Do != null && WouldCreateStatementCycle(parent, ifStmt.Do))
+                return true;
+            if (ifStmt.Else != null && WouldCreateStatementCycle(parent, ifStmt.Else))
+                return true;
+        }
+        else if (child is WhileStatement whileStmt)
+        {
+            if (whileStmt.Body != null && WouldCreateStatementCycle(parent, whileStmt.Body))
                 return true;
         }
 

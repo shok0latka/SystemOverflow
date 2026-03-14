@@ -18,6 +18,7 @@ namespace Script.Core.Statements
 
         IStatement? Next { get; set; }
         IReadOnlyList<StatementArgument> Arguments { get; }
+        string Name { get; }
     }
 
     public static class StatementExtensions

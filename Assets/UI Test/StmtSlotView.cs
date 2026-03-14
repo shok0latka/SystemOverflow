@@ -20,12 +20,19 @@ public class StmtSlotView : VisualElement
 
     public StatementBlockView? ChildBlock { get; private set; }
 
+    readonly VisualElement placeholder;
+
     public StmtSlotView(StatementBlockView parent, StmtSlotKind kind)
     {
         ParentBlock = parent;
         Kind = kind;
 
         AddToClassList("stmt-slot");
+
+        placeholder = new VisualElement();
+        placeholder.AddToClassList("stmt-slot-placeholder");
+
+        Add(placeholder);
 
         Debug.Log($"[StmtSlotView] Created -> {ParentBlock.DebugName}:{Kind}");
 
@@ -57,6 +64,8 @@ public class StmtSlotView : VisualElement
         ParentBlock.SetStatementSlot(Kind, block);
 
         Add(block);
+
+        placeholder.style.display = DisplayStyle.None;
     }
 
     public StatementBlockView? ReplaceChild(StatementBlockView newBlock)
@@ -78,8 +87,12 @@ public class StmtSlotView : VisualElement
 
         ChildBlock.ParentSlot = null;
         ParentBlock.ClearStatementSlot(Kind);
+
         ChildBlock = null;
 
         Clear();
+        Add(placeholder);
+
+        placeholder.style.display = DisplayStyle.Flex;
     }
 }

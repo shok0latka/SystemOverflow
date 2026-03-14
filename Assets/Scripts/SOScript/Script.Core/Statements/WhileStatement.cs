@@ -29,6 +29,8 @@ namespace Script.Core.Statements
 
         IReadOnlyList<StatementArgument> IStatement.Arguments => Arguments;
 
+        public string Name => "While";
+
         public ControlFlowResult Execute()
         {
             while (Convert.ToBoolean(Condition.Evaluate()))

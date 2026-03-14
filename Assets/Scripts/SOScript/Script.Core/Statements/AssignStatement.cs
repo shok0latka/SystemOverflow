@@ -34,6 +34,8 @@ namespace Script.Core.Statements
 
         IReadOnlyList<StatementArgument> IStatement.Arguments => Arguments;
 
+        public string Name => $"Assign ({Var.Name})";
+
         public ControlFlowResult Execute()
         {
             Var.Update(ToAssign);

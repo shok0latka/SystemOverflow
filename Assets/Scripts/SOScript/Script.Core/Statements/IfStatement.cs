@@ -30,6 +30,8 @@ namespace Script.Core.Statements
 
         IReadOnlyList<StatementArgument> IStatement.Arguments => Arguments;
 
+        public string Name => "If";
+
         public ControlFlowResult Execute()
         {
             ControlFlowResult result;

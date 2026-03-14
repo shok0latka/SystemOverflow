@@ -16,6 +16,8 @@ namespace Script.Core.Statements
 
         IReadOnlyList<StatementArgument> IStatement.Arguments => Arguments;
 
+        public string Name => "Break";
+
         public ControlFlowResult Execute()
         {
             return ControlFlowResult.Break;

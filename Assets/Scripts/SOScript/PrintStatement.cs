@@ -31,6 +31,8 @@ public class PrintStatement: IStatement
 
     public IStatement? Next { get; set; }
 
+    public string Name => "Print";
+
     public ControlFlowResult Execute()
     {
         Debug.Log(Value?.Evaluate() ?? "[null]");
