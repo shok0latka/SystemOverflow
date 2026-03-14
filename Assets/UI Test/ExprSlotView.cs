@@ -5,39 +5,37 @@ using Script.Core.Expressions;
 using UnityEngine.UIElements;
 using UnityEngine;
 
-public class SlotView : VisualElement
+public class ExprSlotView : VisualElement
 {
-    public ExpressionBlockView ParentBlock { get; }
+    public IExpressionSlotHost ParentHost { get; }
     public int Index { get; }
 
     public ExpressionBlockView? ChildBlock { get; private set; }
 
-    public SlotView(ExpressionBlockView parent, int index)
+    public ExprSlotView(IExpressionSlotHost parentHost, int index)
     {
-        ParentBlock = parent;
+        ParentHost = parentHost;
         Index = index;
 
         AddToClassList("expr-slot");
 
-        Debug.Log($"[SlotView] Created -> {ParentBlock.DebugName}[{Index}]");
+        Debug.Log($"[ExprSlotView] Created -> {ParentHost.DebugName}[{Index}]");
 
         RegisterCallback<ClickEvent>(evt =>
         {
             evt.StopPropagation();
-            Debug.Log($"[SlotView] Click -> {ParentBlock.DebugName}[{Index}]");
+            Debug.Log($"[ExprSlotView] Click -> {ParentHost.DebugName}[{Index}]");
             ExpressionGraphController.Instance.SelectSlot(this);
         });
     }
 
-    
-
     public void SetChild(ExpressionBlockView block)
     {
-        Debug.Log($"[SlotView] SetChild -> {block.DebugName} -> {ParentBlock.DebugName}[{Index}]");
+        Debug.Log($"[ExprSlotView] SetChild -> {block.DebugName} -> {ParentHost.DebugName}[{Index}]");
 
         if (block.ParentSlot != null)
         {
-            Debug.LogWarning($"[SlotView] Block already connected -> {block.DebugName}");
+            Debug.LogWarning($"[ExprSlotView] Block already connected -> {block.DebugName}");
         }
 
         block.RemoveFromHierarchy();
@@ -48,7 +46,7 @@ public class SlotView : VisualElement
         ChildBlock = block;
         block.ParentSlot = this;
 
-        ParentBlock.Expression[Index] = block.Expression;
+        ParentHost.SetExpression(Index, block.Expression);
 
         Add(block);
     }
@@ -68,11 +66,11 @@ public class SlotView : VisualElement
         if (ChildBlock is null)
             return;
 
-        Debug.Log($"[SlotView] ClearChild -> {ParentBlock.DebugName}[{Index}]");
+        Debug.Log($"[ExprSlotView] ClearChild -> {ParentHost.DebugName}[{Index}]");
 
         ChildBlock.ParentSlot = null;
         ChildBlock.Expression.Parent = null;
-        ParentBlock.Expression[Index] = null;
+        ParentHost.SetExpression(Index, null);
         ChildBlock = null;
 
         Clear();

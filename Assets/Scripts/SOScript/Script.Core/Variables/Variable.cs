@@ -19,7 +19,6 @@ namespace Script.Core.Variables
             Type = type;
             Name = name;
         }
-    //TODO Сделать метод TryUpdate
         public void Update(Expression e)
         {
             ValidateType(e.Type);
@@ -35,7 +34,6 @@ namespace Script.Core.Variables
             await AssignAsync(e);
         }
 
-    //TODO Сделать return bool
         public virtual void ValidateType(ScriptType type)
         {
             if (type != ScriptType.Undefined && type != Type)

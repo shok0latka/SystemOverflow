@@ -8,6 +8,13 @@ using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Addit
 using Unity.VisualScripting;
 using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Multiplication;
 using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Subtraction;
+using Script.Core.Statements;
+using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Modulo;
+using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Division;
+using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.LessOrEqual;
+using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Equality;
+using Script.Core.Variables.Implementations;
+using Script.Core.Expressions;
 
 public class ExpressionTestWindow : EditorWindow
 {
@@ -20,47 +27,53 @@ public class ExpressionTestWindow : EditorWindow
 
     public void CreateGUI()
     {
-        var add_system = new BinaryOperatorOverloadSystem<AdditionOperator>();
-        var mul_system = new BinaryOperatorOverloadSystem<MultiplicationOperator>();
-        var sub_system = new BinaryOperatorOverloadSystem<SubtractionOperator>();
         var root = rootVisualElement;
 
         LoadStyles(root);
+
         var toolbar = new VisualElement();
         toolbar.style.flexDirection = FlexDirection.Row;
-        
+
         var resultLabel = new Label("Result: ");
+
         var evalButton = new Button(() => EvaluateSelected(resultLabel))
         {
-            text = "Evaluate"
+            text = "Execute"
         };
+
         toolbar.Add(evalButton);
         toolbar.Add(resultLabel);
         toolbar.AddToClassList("expr-toolbar");
 
-        var graph = new GraphRoot();
-
         root.Add(toolbar);
+
+        var graph = new GraphRoot();
         root.Add(graph);
-        
 
-        var literal1 = new ExpressionBlockView(new NumeralExpression() { RawText="1" }, "Literal_1");
-        var literal2 = new ExpressionBlockView(new NumeralExpression() { RawText="5" }, "Literal_2");
-        var literal3 = new ExpressionBlockView(new NumeralExpression() { RawText="5" }, "Literal_3");
-        var literal4 = new ExpressionBlockView(new NumeralExpression() { RawText="5" }, "Literal_4");
-        var literal5 = new ExpressionBlockView(new NumeralExpression() { RawText="5" }, "Literal_5");
-        var addBlock = new ExpressionBlockView(new BinaryExpression(add_system), "Addition_Op");
-        var mulBlock = new ExpressionBlockView(new BinaryExpression(mul_system), "Multiplication_Op");
-        var subBlock = new ExpressionBlockView(new BinaryExpression(sub_system), "Subtraction_Op");
+        var addSystem = new BinaryOperatorOverloadSystem<AdditionOperator>();
+        var mulSystem = new BinaryOperatorOverloadSystem<MultiplicationOperator>();
+        var divSystem = new BinaryOperatorOverloadSystem<DivisionOperator>();
+        var modSystem = new BinaryOperatorOverloadSystem<ModuloOperator>();
+        var leSystem = new BinaryOperatorOverloadSystem<LessOrEqualOperator>();
+        var eqSystem = new BinaryOperatorOverloadSystem<EqualityOperator>();
 
-        graph.AddFreeBlock(literal1);
-        graph.AddFreeBlock(literal2);
-        graph.AddFreeBlock(literal3);
-        graph.AddFreeBlock(literal4);
-        graph.AddFreeBlock(literal5);
-        graph.AddFreeBlock(addBlock);
-        graph.AddFreeBlock(mulBlock);
-        graph.AddFreeBlock(subBlock);
+        var n = new IntVariable("n");
+        var i = new IntVariable("i");
+
+        graph.AddFreeBlock(new StatementBlockView(new AssignStatement(i), "Assign_0"));
+        graph.AddFreeBlock(new StatementBlockView(new AssignStatement(n), "Assign_1"));
+        graph.AddFreeBlock(new ExpressionBlockView(new NumeralExpression() { RawText = "1" }, "Num_0"));
+        graph.AddFreeBlock(new ExpressionBlockView(new NumeralExpression() { RawText = "1" }, "Num_1"));
+        graph.AddFreeBlock(new StatementBlockView(new WhileStatement(), "While"));
+        graph.AddFreeBlock(new ExpressionBlockView(new VariableExpression(i), "i_expr_0"));
+        graph.AddFreeBlock(new ExpressionBlockView(new VariableExpression(n), "n_expr_0"));
+        graph.AddFreeBlock(new ExpressionBlockView(new BinaryExpression(leSystem), "Le"));
+        graph.AddFreeBlock(new StatementBlockView(new PrintStatement(), "Print"));
+        graph.AddFreeBlock(new ExpressionBlockView(new VariableExpression(i), "i_expr_1"));
+        graph.AddFreeBlock(new StatementBlockView(new AssignStatement(i), "Assign_2"));
+        graph.AddFreeBlock(new ExpressionBlockView(new BinaryExpression(addSystem), "add"));
+        graph.AddFreeBlock(new ExpressionBlockView(new VariableExpression(i), "i_expr_1"));
+        graph.AddFreeBlock(new ExpressionBlockView(new NumeralExpression() { RawText = "1" }, "Num_2"));
     }
 
     async void EvaluateSelected(Label resultLabel)
@@ -73,10 +86,21 @@ public class ExpressionTestWindow : EditorWindow
             return;
         }
 
-        var expr = controller.SelectedBlock.Expression;
-        var result = await expr.EvaluateAsync();
+        if (controller.SelectedBlock is ExpressionBlockView exprBlock)
+        {
+            var result = await exprBlock.Expression.EvaluateAsync();
+            resultLabel.text = $"Result: {result}";
+            return;
+        }
 
-        resultLabel.text = $"Result: {result}";
+        if (controller.SelectedBlock is StatementBlockView stmtBlock)
+        {
+            var result = await stmtBlock.Statement.ExecuteAsync();
+            resultLabel.text = $"Statement executed (control flow: {result.Kind})";
+            return;
+        }
+
+        Debug.LogWarning("Selected block is not evaluable");
     }
 
     void LoadStyles(VisualElement root)

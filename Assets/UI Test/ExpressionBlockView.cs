@@ -11,13 +11,13 @@ using Script.Core.Expressions.LiteralExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-public class ExpressionBlockView : VisualElement
+public class ExpressionBlockView : VisualElement, IExpressionSlotHost
 {
     public Expression Expression { get; }
 
-    public List<SlotView> Slots { get; } = new();
+    public List<ExprSlotView> Slots { get; } = new();
 
-    public SlotView? ParentSlot = null;
+    public ExprSlotView? ParentSlot = null;
 
     public string DebugName { get; }
 
@@ -54,7 +54,7 @@ public class ExpressionBlockView : VisualElement
 
     void BuildBinary(BinaryExpression expr)
     {
-        var left = new SlotView(this, 0);
+        var left = new ExprSlotView(this, 0);
         Slots.Add(left);
         Add(left);
 
@@ -62,7 +62,7 @@ public class ExpressionBlockView : VisualElement
         op.AddToClassList("expr-separator");
         Add(op);
 
-        var right = new SlotView(this, 1);
+        var right = new ExprSlotView(this, 1);
         Slots.Add(right);
         Add(right);
     }
@@ -133,6 +133,29 @@ public class ExpressionBlockView : VisualElement
         Add(CreateBoolLabel("false"));
     }
 
+    public ExpressionBlockView(VariableExpression expr, string? debugName = null) : this((Expression)expr, debugName)
+    {
+        BuildVariable(expr);
+    }
+
+    void BuildVariable(VariableExpression expr)
+    {
+        var label = new Label(expr.Var.Name);
+        label.AddToClassList("expr-variable");
+
+        Add(label);
+    }
+
+    public void SetExpression(int index, Expression? expression)
+    {
+        Expression[index] = expression;
+    }
+
+    public Expression? GetExpression(int index)
+    {
+        return Expression[index];
+    }
+
     Label CreateBoolLabel(string text)
     {
         var label = new Label(text);
@@ -146,7 +169,7 @@ public class ExpressionBlockView : VisualElement
 
         for (int i = 0; i < arity; i++)
         {
-            var slot = new SlotView(this, i);
+            var slot = new ExprSlotView(this, i);
             Slots.Add(slot);
             Add(slot);
         }
