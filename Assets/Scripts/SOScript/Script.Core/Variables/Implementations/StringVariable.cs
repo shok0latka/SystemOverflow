@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Threading.Tasks;
 using Script.Core.Expressions;
 
 namespace Script.Core.Variables.Implementations
@@ -19,7 +20,13 @@ namespace Script.Core.Variables.Implementations
             runtimeValue = Convert.ToString(e.Evaluate()) ?? string.Empty;
         }
 
-        public StringVariable(): base(Types.ScriptType.String)
+        public override async Task AssignAsync(Expression e)
+        {
+            var result = await e.EvaluateAsync();
+            runtimeValue = Convert.ToString(result) ?? string.Empty;
+        }
+
+        public StringVariable(string name): base(Types.ScriptType.String, name)
         {
             
         }

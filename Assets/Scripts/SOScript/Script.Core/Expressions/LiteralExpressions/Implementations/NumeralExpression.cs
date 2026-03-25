@@ -2,6 +2,7 @@
 
 using System;
 using System.Globalization;
+using System.Threading.Tasks;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.LiteralExpressions.Implementations
@@ -37,6 +38,15 @@ namespace Script.Core.Expressions.LiteralExpressions.Implementations
         }
 
         public override object? Evaluate()
-            => Type == ScriptType.Undefined ? null : _value;
+        {
+            InvokeOnEvaluate();
+            return Type == ScriptType.Undefined ? null : _value;
+        }
+
+        public override async Task<object?> EvaluateAsync()
+        {
+            await InvokeOnEvaluateAsync();
+            return Type == ScriptType.Undefined ? null : _value;
+        }
     }
 }

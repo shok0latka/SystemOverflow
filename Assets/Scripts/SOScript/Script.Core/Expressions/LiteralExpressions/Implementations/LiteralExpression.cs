@@ -2,6 +2,7 @@
 
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.LiteralExpressions.Implementations
@@ -17,7 +18,16 @@ namespace Script.Core.Expressions.LiteralExpressions.Implementations
         }
 
         public override object? Evaluate()
-            => _value;
+        {
+            InvokeOnEvaluate();
+            return _value;
+        }
+
+        public override async Task<object?> EvaluateAsync()
+        {
+            await InvokeOnEvaluateAsync();
+            return _value;
+        }
 
         private static string ParseEscapes(string input)
         {

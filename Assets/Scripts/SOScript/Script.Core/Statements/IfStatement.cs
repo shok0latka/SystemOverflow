@@ -1,6 +1,8 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Script.Core.Expressions;
 using Script.Core.Statements.ControlFlow;
 using Script.Core.Types;
@@ -9,39 +11,71 @@ namespace Script.Core.Statements
 {
     public sealed class IfStatement : IStatement
     {
-        private Expression? condition;
-        public Expression? Condition
+        public event Func<Task>? OnExecuteAsync;
+
+        public List<StatementArgument> Arguments { get; } = new() { 
+            new StatementArgument("Condition", new List<ScriptType> { ScriptType.Boolean }) 
+        };
+
+        public Expression Condition
         {
-            get => condition;
-            set
-            {
-                var newType = value?.Type ?? ScriptType.Undefined;
-                if (newType != ScriptType.Undefined && newType != ScriptType.Boolean)
-                {
-                    throw new ArgumentException($"Incorrect condition type {newType}. Expected: {ScriptType.Boolean} or {ScriptType.Undefined}", nameof(Condition));
-                }
-                condition = value;
-            }
+            get => Arguments[0];
+            set => Arguments[0].Attached = value;
         }
 
-        public SequenceStatement? Then { get; set; }
-        public SequenceStatement? Else { get; set; }
+        public IStatement? Next { get; set; }
+
+        public IStatement? Do { get; set; }
+        public IStatement? Else { get; set; }
+
+        IReadOnlyList<StatementArgument> IStatement.Arguments => Arguments;
+
+        public string Name => "If";
 
         public ControlFlowResult Execute()
         {
-            if (Condition?.Type is not ScriptType.Boolean)
-            {
-                throw new ArgumentException("At runtime condition type must be bool", nameof(Condition));
-            }
+            ControlFlowResult result;
 
             if (Convert.ToBoolean(Condition?.Evaluate()))
             {
-                return Then?.Execute() ?? ControlFlowResult.None;
+                result = Do?.Execute() ?? ControlFlowResult.None;
             }
             else
             {
-                return Else?.Execute() ?? ControlFlowResult.None;
+                result =  Else?.Execute() ?? ControlFlowResult.None;
             }
+
+            if (result.Kind != ControlFlowKind.None)
+            {
+                return result;
+            }
+
+            return Next?.Execute() ?? ControlFlowResult.None;
+        }
+
+        public async Task<ControlFlowResult> ExecuteAsync()
+        {
+            if (OnExecuteAsync != null)
+                await OnExecuteAsync();
+
+            var conditionValue = Condition is null ? false : Convert.ToBoolean(await Condition.EvaluateAsync());
+
+            ControlFlowResult result;
+            if (conditionValue)
+            {
+                result = await (Do?.ExecuteAsync() ?? Task.FromResult(ControlFlowResult.None));
+            }
+            else
+            {
+                result = await (Else?.ExecuteAsync() ?? Task.FromResult(ControlFlowResult.None));
+            }
+
+            if (result.Kind != ControlFlowKind.None)
+            {
+                return result;
+            }
+
+            return await (Next?.ExecuteAsync() ?? Task.FromResult(ControlFlowResult.None));
         }
     }
 }

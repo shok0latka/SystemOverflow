@@ -32,52 +32,93 @@ public class Test : MonoBehaviour
         var divisionSystem = new BinaryOperatorOverloadSystem<DivisionOperator>();
         var additionSystem = new BinaryOperatorOverloadSystem<AdditionOperator>();
 
-        var n = new IntVariable();
+        var n = new IntVariable("n");
+        var i = new IntVariable("i");
+        var isPrime = new BooleanVariable("isPrime");
+
         var n_expr = new VariableExpression(n);
-
-        var i = new IntVariable();
-
         var i_expr = new VariableExpression(i);
-
-        var i_sqr = new BinaryExpression(mulSystem) { LeftArg = i_expr, RightArg = i_expr };
-        var nRemI = new BinaryExpression(remSystem) { LeftArg = n_expr, RightArg = i_expr };
-
-        var isPrime = new BooleanVariable();
         var isPrime_expr = new VariableExpression(isPrime);
 
-        var loopCond = new BinaryExpression(lessOrEqualSystem) { LeftArg = i_sqr, RightArg = n_expr };
-        var notPrimeCond = new BinaryExpression(equalSystem) { LeftArg = nRemI, RightArg = new NumeralExpression() { RawText = "0" }};
+        var loop = new WhileStatement()
+        {
+            Condition = new BinaryExpression(lessOrEqualSystem)
+            {
+                LeftArg = new BinaryExpression(mulSystem)
+                {
+                    LeftArg = i_expr,
+                    RightArg = i_expr
+                },
+                RightArg = n_expr
+            },
 
+            Body =
+                new IfStatement()
+                {
+                    Condition = new BinaryExpression(equalSystem)
+                    {
+                        LeftArg = new BinaryExpression(remSystem)
+                        {
+                            LeftArg = n_expr,
+                            RightArg = i_expr
+                        },
+                        RightArg = new NumeralExpression() { RawText = "0" }
+                    },
 
-        var notPrimeBody = new SequenceStatement();
-        notPrimeBody.Add(new PrintStatement() { Value = new LiteralExpression() { RawText = "N is not prime: " }});
-        notPrimeBody.Add(new PrintStatement() { Value = n_expr });
-        notPrimeBody.Add(new PrintStatement() { Value = new LiteralExpression() { RawText = " = " }});
-        notPrimeBody.Add(new PrintStatement() { Value = i_expr });
-        notPrimeBody.Add(new PrintStatement() { Value = new LiteralExpression() { RawText = " * " }});
-        notPrimeBody.Add(new PrintStatement() { Value = new BinaryExpression(divisionSystem) { LeftArg = n_expr, RightArg = i_expr }});
-        notPrimeBody.Add(new AssignStatement() { Var = isPrime, ToAssign = new FalseConstant() });
-        notPrimeBody.Add(new BreakStatement());
+                    Do =
+                        new PrintStatement()
+                        {
+                            Value = new LiteralExpression() { RawText = "N is not prime: " }
+                        }
+                        .Then(new PrintStatement() { Value = n_expr })
+                        .Then(new PrintStatement() { Value = new LiteralExpression() { RawText = " = " } })
+                        .Then(new PrintStatement() { Value = i_expr })
+                        .Then(new PrintStatement() { Value = new LiteralExpression() { RawText = " * " } })
+                        .Then(new PrintStatement()
+                        {
+                            Value = new BinaryExpression(divisionSystem)
+                            {
+                                LeftArg = n_expr,
+                                RightArg = i_expr
+                            }
+                        })
+                        .Then(new AssignStatement(isPrime) { ToAssign = new FalseConstant() })
+                        .Then(new BreakStatement())
+                }
+                .Then(
+                    new AssignStatement(i)
+                    {
+                        ToAssign = new BinaryExpression(additionSystem)
+                        {
+                            LeftArg = i_expr,
+                            RightArg = new NumeralExpression() { RawText = "1" }
+                        }
+                    }
+                )
+        };
 
-        var loopBody = new SequenceStatement();
-
-        loopBody.Add(new IfStatement() { Condition = notPrimeCond, Then = notPrimeBody });
-        loopBody.Add(new AssignStatement() { Var = i, ToAssign = new BinaryExpression(additionSystem) { LeftArg = i_expr, RightArg = new NumeralExpression() { RawText = "1" }}});
-
-        var loop = new WhileStatement() { Condition = loopCond, Body = loopBody };
-
-        var primeBody = new SequenceStatement();
-        primeBody.Add(new PrintStatement() { Value = new LiteralExpression() { RawText = "N is prime: " }});
-        primeBody.Add(new PrintStatement() { Value = n_expr });
-
-        var isPrimeFunction = new SequenceStatement();
-        isPrimeFunction.Add(new AssignStatement() { Var = i, ToAssign = new NumeralExpression() { RawText = "2" }});
-        isPrimeFunction.Add(new AssignStatement() { Var = isPrime, ToAssign = new TrueConstant() });
-        isPrimeFunction.Add(loop);
-        isPrimeFunction.Add(new IfStatement() { Condition = isPrime_expr, Then = primeBody });
+        var program =
+            new AssignStatement(i)
+            {
+                ToAssign = new NumeralExpression() { RawText = "2" }
+            }
+            .Then(new AssignStatement(isPrime) { ToAssign = new TrueConstant() })
+            .Then(loop)
+            .Then(
+                new IfStatement()
+                {
+                    Condition = isPrime_expr,
+                    Do =
+                        new PrintStatement()
+                        {
+                            Value = new LiteralExpression() { RawText = "N is prime: " }
+                        }
+                        .Then(new PrintStatement() { Value = n_expr })
+                }
+            );
 
         n.Assign(new NumeralExpression() { RawText = NValue });
-        isPrimeFunction.Execute();
 
+        program.Execute();
     }
 }

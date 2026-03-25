@@ -1,6 +1,8 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Script.Core.Expressions;
 using Script.Core.Statements.ControlFlow;
 using Script.Core.Types;
@@ -9,38 +11,36 @@ namespace Script.Core.Statements
 {
     public sealed class WhileStatement: IStatement
     {
-        private Expression? condition;
-        public Expression? Condition
+        public event Func<Task>? OnExecuteAsync;
+
+        public List<StatementArgument> Arguments { get; } = new() { 
+            new StatementArgument("Condition", new List<ScriptType> { ScriptType.Boolean }) 
+        };
+
+        public Expression Condition
         {
-            get => condition;
-            set
-            {
-                var newType = value?.Type ?? ScriptType.Undefined;
-                if (newType != ScriptType.Undefined && newType != ScriptType.Boolean)
-                {
-                    throw new ArgumentException($"Incorrect condition type {newType}. Expected: {ScriptType.Boolean} or {ScriptType.Undefined}", nameof(Condition));
-                }
-                condition = value;
-            }
+            get => Arguments[0];
+            set => Arguments[0].Attached = value;
         }
 
-        public SequenceStatement? Body { get; set; }
+        public IStatement? Body { get; set; }
+
+        public IStatement? Next { get; set; }
+
+        IReadOnlyList<StatementArgument> IStatement.Arguments => Arguments;
+
+        public string Name => "While";
 
         public ControlFlowResult Execute()
         {
-            if (Condition?.Type is not ScriptType.Boolean)
-            {
-                throw new ArgumentException("At runtime condition type must be bool", nameof(Condition));
-            }
-
-            while (Convert.ToBoolean(Condition?.Evaluate()))
+            while (Convert.ToBoolean(Condition.Evaluate()))
             {
                 var result = Body?.Execute() ?? ControlFlowResult.None;
                 switch (result.Kind)
                 {
                     case ControlFlowKind.Break:
                         {
-                            return ControlFlowResult.None;
+                            return Next?.Execute() ?? ControlFlowResult.None;
                         }
                     case ControlFlowKind.Return:
                         {
@@ -48,7 +48,31 @@ namespace Script.Core.Statements
                         }
                 }
             }
-            return ControlFlowResult.None;
+            return Next?.Execute() ?? ControlFlowResult.None;
+        }
+
+        public async Task<ControlFlowResult> ExecuteAsync()
+        {
+            if (OnExecuteAsync != null)
+                await OnExecuteAsync();
+
+            while (Convert.ToBoolean(await Condition.EvaluateAsync()))
+            {
+                var result = await (Body?.ExecuteAsync() ?? Task.FromResult(ControlFlowResult.None));
+                switch (result.Kind)
+                {
+                    case ControlFlowKind.Break:
+                        {
+                            return await (Next?.ExecuteAsync() ?? Task.FromResult(ControlFlowResult.None));
+                        }
+                    case ControlFlowKind.Return:
+                        {
+                            return result;
+                        }
+                }
+            }
+
+            return await (Next?.ExecuteAsync() ?? Task.FromResult(ControlFlowResult.None));
         }
     }
 }

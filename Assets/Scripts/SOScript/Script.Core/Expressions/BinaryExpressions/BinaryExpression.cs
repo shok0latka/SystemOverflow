@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Threading.Tasks;
 using Script.Core.Types;
 
 namespace Script.Core.Expressions.BinaryExpressions
@@ -71,7 +72,60 @@ namespace Script.Core.Expressions.BinaryExpressions
             {
                 throw new ArgumentNullException(nameof(CurrentOverload));
             }
+            InvokeOnEvaluate();
             return CurrentOverload.Evaluate(LeftArg, RightArg);
+        }
+
+        public override async Task<object?> EvaluateAsync()
+        {
+            await InvokeOnEvaluateAsync();
+            if (LeftArg != null)
+                await LeftArg.EvaluateAsync();
+            if (RightArg != null)
+                await RightArg.EvaluateAsync();
+            if (LeftArg is null)
+            {
+                throw new ArgumentNullException(nameof(LeftArg));
+            }
+            if (RightArg is null)
+            {
+                throw new ArgumentNullException(nameof(RightArg));
+            }
+            if (CurrentOverload is null)
+            {
+                throw new ArgumentNullException(nameof(CurrentOverload));
+            }
+            return CurrentOverload.Evaluate(LeftArg, RightArg);
+        }
+
+        public override int Arity()
+        {
+            return 2;
+        }
+
+        protected override void SetInput(int index, Expression? value)
+        {
+            switch (index)
+            {
+                case 0: 
+                    LeftArg = value;
+                    break;
+                case 1:
+                    RightArg = value;
+                    break;
+                default:
+                    throw new IndexOutOfRangeException();
+            }
+        }
+
+        protected override Expression? GetInput(int index)
+        {
+            return index switch
+            {
+                0 => LeftArg,
+                1 => RightArg,
+                _ => throw new IndexOutOfRangeException()
+            };
         }
 
         public BinaryExpression(BinaryOperatorOverloadSystem system)
