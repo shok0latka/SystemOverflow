@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1e3bccb530946f6a3d1504ff0ad8b4e, type: 3}
+  m_Name: Heavy
+  m_EditorClassIdentifier: 
+  patrolSpeed: 1.4
+  chaseSpeed: 2.4
+  visionRadius: 6
+  visionConeAngleDegrees: 90
+  loseSightTime: 1.8
+  suspicionGainPerSecond: 0.7
+  suspicionDecayPerSecond: 0.2
+  suspicionThreshold: 0.5
+  aggressiveness: 0.8
+  searchDuration: 4.5
+  attackRadius: 1.4
+  attackCooldown: 0.6
+  attackDamage: 2
+  baseHackDuration: 6
+  hackResistance: 0.65

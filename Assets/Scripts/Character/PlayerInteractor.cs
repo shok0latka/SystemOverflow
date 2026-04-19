@@ -2,10 +2,10 @@ using UnityEngine;
 
 public class PlayerInteractor : MonoBehaviour
 {
+    [Header("Interact")]
     public float interactRadius = 1.2f;
     public LayerMask interactLayer;
 
-    // Трогаем траву :3
     public void TryInteract()
     {
         Collider2D hit = Physics2D.OverlapCircle(
@@ -14,17 +14,17 @@ public class PlayerInteractor : MonoBehaviour
             interactLayer
         );
 
-        if (hit != null)
+        if (hit == null)
         {
-            Interactable interactable = hit.GetComponent<Interactable>();
-            if (interactable != null)
-            {
-                interactable.Interact();
-            }
+            return;
+        }
+
+        Interactable interactable = hit.GetComponent<Interactable>();
+        if (interactable != null)
+        {
+            interactable.Interact();
         }
     }
-
-    // Область взаимодейстия, идна только в дебаге
 
     private void OnDrawGizmosSelected()
     {

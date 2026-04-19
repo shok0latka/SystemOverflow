@@ -5,7 +5,7 @@ public class GameStateManager : MonoBehaviour
 {
     public static GameStateManager Instance;
 
-    private bool isPaused;
+    private bool _isPaused;
 
     private void Awake()
     {
@@ -30,8 +30,8 @@ public class GameStateManager : MonoBehaviour
 
     public void TogglePause()
     {
-        isPaused = !isPaused;
-        Time.timeScale = isPaused ? 0f : 1f;
+        _isPaused = !_isPaused;
+        Time.timeScale = _isPaused ? 0f : 1f;
     }
 
     public void WinLevel()

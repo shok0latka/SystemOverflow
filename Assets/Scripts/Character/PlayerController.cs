@@ -2,37 +2,48 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    private PlayerMovement movement;
-    private PlayerInteractor interactor;
+    private PlayerMovement _movement;
+    private PlayerInteractor _interactor;
 
     private void Awake()
     {
-        movement = GetComponent<PlayerMovement>();
-        interactor = GetComponent<PlayerInteractor>();
+        _movement = GetComponent<PlayerMovement>();
+        _interactor = GetComponent<PlayerInteractor>();
     }
 
-    // Взаимодействеи, бег и приседание, по базе
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.E))
         {
-            interactor.TryInteract();
+            if (_interactor != null)
+            {
+                _interactor.TryInteract();
+            }
         }
+
+        if (_movement == null)
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
-            movement.Crouch(true);
+            _movement.Crouch(true);
         }
+
         if (Input.GetKeyUp(KeyCode.LeftShift))
         {
-            movement.Crouch(false);
+            _movement.Crouch(false);
         }
+
         if (Input.GetKeyDown(KeyCode.LeftControl))
         {
-            movement.SpeedUp(true);
+            _movement.SpeedUp(true);
         }
+
         if (Input.GetKeyUp(KeyCode.LeftControl))
         {
-            movement.SpeedUp(false);
+            _movement.SpeedUp(false);
         }
     }
 }
