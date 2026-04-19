@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   patrolSpeed: 1.4
   chaseSpeed: 2.4
-  visionRadius: 7
+  visionRadius: 6
   visionConeAngleDegrees: 90
   loseSightTime: 1.8
   suspicionGainPerSecond: 0.7

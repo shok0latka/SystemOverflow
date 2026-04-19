@@ -472,11 +472,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5720277353491606260, guid: 4843c6294db27f84bb07ff202205e1ea, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3.06
+      value: 1.97
       objectReference: {fileID: 0}
     - target: {fileID: 5720277353491606260, guid: 4843c6294db27f84bb07ff202205e1ea, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.613821
+      value: 1.66
       objectReference: {fileID: 0}
     - target: {fileID: 5720277353491606260, guid: 4843c6294db27f84bb07ff202205e1ea, type: 3}
       propertyPath: m_LocalPosition.z
@@ -704,11 +704,6 @@ MonoBehaviour:
   interactLayer:
     serializedVersion: 2
     m_Bits: 0
-  hackRadius: 1.8
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 0
-  hackDurationSeconds: 6
 --- !u!4 &1542137836 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5272552499143439447, guid: cf6879ba03f6f5e4ab3ad5150b0ba076, type: 3}
