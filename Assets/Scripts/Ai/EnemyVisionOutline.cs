@@ -15,7 +15,7 @@ public class EnemyVisionOutline : MonoBehaviour
     [SerializeField] private Color lineColor = new Color(1f, 0.82f, 0.2f, 0.95f);
     [SerializeField] private int sortingOrder = 1500;
 
-    private static Material sharedMaterial;
+    private static Material _sharedMaterial;
 
     public void RefreshOutline(
         Vector3 origin,
@@ -214,9 +214,9 @@ public class EnemyVisionOutline : MonoBehaviour
 
     private static Material GetSharedMaterial()
     {
-        if (sharedMaterial != null)
+        if (_sharedMaterial != null)
         {
-            return sharedMaterial;
+            return _sharedMaterial;
         }
 
         Shader shader = Shader.Find("Sprites/Default");
@@ -225,11 +225,11 @@ public class EnemyVisionOutline : MonoBehaviour
             return null;
         }
 
-        sharedMaterial = new Material(shader)
+        _sharedMaterial = new Material(shader)
         {
             name = "EnemyVisionOutlineMaterial"
         };
 
-        return sharedMaterial;
+        return _sharedMaterial;
     }
 }

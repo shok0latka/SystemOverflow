@@ -10,10 +10,10 @@ internal static class EnemyAI2DGizmoDrawer
     private const float FirstPointScale = 1.35f;
     private const float MinimumVisibleRadius = 0.01f;
 
-    private static readonly Color AttackRadiusColor = new Color(1f, 0.25f, 0.25f, 0.95f);
-    private static readonly Color PatrolPointColor = new Color(0.2f, 0.85f, 1f, 0.95f);
-    private static readonly Color PatrolPathColor = new Color(0.2f, 1f, 0.45f, 0.95f);
-    private static readonly Color FirstPatrolPointColor = new Color(1f, 0.95f, 0.25f, 0.95f);
+    private static readonly Color _attackRadiusColor = new Color(1f, 0.25f, 0.25f, 0.95f);
+    private static readonly Color _patrolPointColor = new Color(0.2f, 0.85f, 1f, 0.95f);
+    private static readonly Color _patrolPathColor = new Color(0.2f, 1f, 0.45f, 0.95f);
+    private static readonly Color _firstPatrolPointColor = new Color(1f, 0.95f, 0.25f, 0.95f);
 
     [DrawGizmo(GizmoType.Selected)]
     private static void DrawSelectedGizmos(EnemyAI2D enemy, GizmoType gizmoType)
@@ -50,7 +50,7 @@ internal static class EnemyAI2DGizmoDrawer
             return;
         }
 
-        Gizmos.color = AttackRadiusColor;
+        Gizmos.color = _attackRadiusColor;
         Gizmos.DrawWireSphere(enemyTransform.position, attackRadius);
     }
 
@@ -79,12 +79,12 @@ internal static class EnemyAI2DGizmoDrawer
                 firstPoint = patrolPoint;
             }
 
-            Gizmos.color = PatrolPointColor;
+            Gizmos.color = _patrolPointColor;
             Gizmos.DrawWireSphere(patrolPoint.position, PointRadius);
 
             if (previousPoint != null)
             {
-                Gizmos.color = PatrolPathColor;
+                Gizmos.color = _patrolPathColor;
                 Gizmos.DrawLine(previousPoint.position, patrolPoint.position);
             }
 
@@ -96,12 +96,12 @@ internal static class EnemyAI2DGizmoDrawer
             return;
         }
 
-        Gizmos.color = FirstPatrolPointColor;
+        Gizmos.color = _firstPatrolPointColor;
         Gizmos.DrawWireSphere(firstPoint.position, PointRadius * FirstPointScale);
 
         if (previousPoint != null && previousPoint != firstPoint)
         {
-            Gizmos.color = PatrolPathColor;
+            Gizmos.color = _patrolPathColor;
             Gizmos.DrawLine(previousPoint.position, firstPoint.position);
         }
     }

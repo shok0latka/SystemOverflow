@@ -11,8 +11,8 @@ public class PlayerMovement : MonoBehaviour
 
     private float _baseSpeed = 5f;
 
-    private Rigidbody2D rb;
-    private Vector2 input;
+    private Rigidbody2D _rb;
+    private Vector2 _input;
 
     private bool _isCrouchng = false;
 
@@ -20,12 +20,12 @@ public class PlayerMovement : MonoBehaviour
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
+        _rb = GetComponent<Rigidbody2D>();
     }
 
     private void Update()
     {
-        input = new Vector2(
+        _input = new Vector2(
             Input.GetAxisRaw("Horizontal"),
             Input.GetAxisRaw("Vertical")
         ).normalized;
@@ -33,7 +33,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        rb.velocity = input * moveSpeed;
+        _rb.velocity = _input * moveSpeed;
     }
 
     public void SpeedUp(bool isSpeed)

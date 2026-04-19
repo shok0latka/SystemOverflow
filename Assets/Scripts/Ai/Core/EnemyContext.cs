@@ -3,6 +3,7 @@ using UnityEngine;
 public class EnemyContext
 {
     private const float DefaultViewConeAngleDegrees = 90f;
+    private const float MinimumInputMagnitude = 0.0001f;
 
     private readonly EnemyAI2D _owner;
 
@@ -33,6 +34,7 @@ public class EnemyContext
     public Transform Player { get; private set; }
     public PlayerHealth PlayerHealth { get; private set; }
     public LayerMask ObstacleMask { get; set; }
+    public EnemyHackController HackController { get; private set; }
 
     public SuspicionMeter Suspicion { get; }
 
@@ -72,6 +74,11 @@ public class EnemyContext
     {
         Player = player;
         PlayerHealth = player == null ? null : player.GetComponent<PlayerHealth>();
+    }
+
+    public void SetHackController(EnemyHackController hackController)
+    {
+        HackController = hackController;
     }
 
     public void EnsurePlayerReference()
@@ -200,6 +207,112 @@ public class EnemyContext
         {
             PatrolIndex = (PatrolIndex + 1) % PatrolPoints.Length;
         }
+    }
+
+    public void MoveWithRelativeInput(float moveRight, float moveForward, float speed, float fixedDeltaTime)
+    {
+        if (Rigidbody == null || speed <= 0f)
+        {
+            return;
+        }
+
+        Vector2 input = new Vector2(
+            Mathf.Clamp(moveRight, -1f, 1f),
+            Mathf.Clamp(moveForward, -1f, 1f));
+        if (input.sqrMagnitude < MinimumInputMagnitude)
+        {
+            return;
+        }
+
+        input = Vector2.ClampMagnitude(input, 1f);
+        Vector2 forward = ViewDirection.sqrMagnitude < MinimumInputMagnitude
+            ? Vector2.right
+            : ViewDirection.normalized;
+        Vector2 right = new Vector2(forward.y, -forward.x);
+        Vector2 moveDirection = right * input.x + forward * input.y;
+        if (moveDirection.sqrMagnitude < MinimumInputMagnitude)
+        {
+            return;
+        }
+
+        moveDirection.Normalize();
+        Rigidbody.MovePosition(Rigidbody.position + moveDirection * speed * fixedDeltaTime);
+    }
+
+    public void RotateViewDirection(float turnInput, float degreesPerSecond, float deltaTime)
+    {
+        float clampedTurnInput = Mathf.Clamp(turnInput, -1f, 1f);
+        if (Mathf.Abs(clampedTurnInput) < 0.001f || degreesPerSecond <= 0f || deltaTime <= 0f)
+        {
+            return;
+        }
+
+        Vector2 currentDirection = ViewDirection.sqrMagnitude < MinimumInputMagnitude
+            ? Vector2.right
+            : ViewDirection.normalized;
+        float angleDegrees = -clampedTurnInput * degreesPerSecond * deltaTime;
+        float radians = angleDegrees * Mathf.Deg2Rad;
+        float cos = Mathf.Cos(radians);
+        float sin = Mathf.Sin(radians);
+        Vector2 rotatedDirection = new Vector2(
+            currentDirection.x * cos - currentDirection.y * sin,
+            currentDirection.x * sin + currentDirection.y * cos);
+        UpdateViewDirection(rotatedDirection);
+    }
+
+    public bool TryInteractWithNearestForwardInteractable()
+    {
+        float interactionRadius = CloseVisionRadius;
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(Position, interactionRadius);
+        if (colliders == null || colliders.Length == 0)
+        {
+            return false;
+        }
+
+        Vector2 forward = ViewDirection.sqrMagnitude < MinimumInputMagnitude
+            ? Vector2.right
+            : ViewDirection.normalized;
+        Interactable nearestInteractable = null;
+        float nearestSqrDistance = float.MaxValue;
+
+        foreach (Collider2D collider in colliders)
+        {
+            if (collider == null)
+            {
+                continue;
+            }
+
+            Interactable interactable = collider.GetComponentInParent<Interactable>();
+            if (interactable == null)
+            {
+                continue;
+            }
+
+            Vector2 toInteractable = (Vector2)interactable.transform.position - Position;
+            float sqrDistance = toInteractable.sqrMagnitude;
+            if (sqrDistance >= MinimumInputMagnitude)
+            {
+                Vector2 directionToInteractable = toInteractable / Mathf.Sqrt(sqrDistance);
+                if (Vector2.Dot(forward, directionToInteractable) <= 0f)
+                {
+                    continue;
+                }
+            }
+
+            if (sqrDistance < nearestSqrDistance)
+            {
+                nearestSqrDistance = sqrDistance;
+                nearestInteractable = interactable;
+            }
+        }
+
+        if (nearestInteractable == null)
+        {
+            return false;
+        }
+
+        nearestInteractable.Interact();
+        return true;
     }
 
     public bool TryAttackPlayer()

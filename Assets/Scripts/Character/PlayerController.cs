@@ -2,49 +2,48 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    private PlayerMovement movement;
-    private PlayerInteractor interactor;
+    private PlayerMovement _movement;
+    private PlayerInteractor _interactor;
 
     private void Awake()
     {
-        movement = GetComponent<PlayerMovement>();
-        interactor = GetComponent<PlayerInteractor>();
+        _movement = GetComponent<PlayerMovement>();
+        _interactor = GetComponent<PlayerInteractor>();
     }
 
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.E))
         {
-            bool hacked = interactor != null && interactor.TryHackNearestEnemy();
-            if (!hacked && interactor != null)
+            if (_interactor != null)
             {
-                interactor.TryInteract();
+                _interactor.TryInteract();
             }
         }
 
-        if (movement == null)
+        if (_movement == null)
         {
             return;
         }
 
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
-            movement.Crouch(true);
+            _movement.Crouch(true);
         }
 
         if (Input.GetKeyUp(KeyCode.LeftShift))
         {
-            movement.Crouch(false);
+            _movement.Crouch(false);
         }
 
         if (Input.GetKeyDown(KeyCode.LeftControl))
         {
-            movement.SpeedUp(true);
+            _movement.SpeedUp(true);
         }
 
         if (Input.GetKeyUp(KeyCode.LeftControl))
         {
-            movement.SpeedUp(false);
+            _movement.SpeedUp(false);
         }
     }
 }

@@ -27,16 +27,17 @@ public class EnemyAI2D : MonoBehaviour
     [SerializeField] private EnemyState currentState = EnemyState.Patrol;
     [SerializeField, Range(0f, 1f)] private float suspicion;
 
-    private EnemyContext context;
-    private EnemyStatusIndicator statusIndicator;
-    private EnemyVisionOutline visionOutline;
-    private EnemyStateMachine stateMachine;
+    private EnemyContext _context;
+    private EnemyHackController _hackController;
+    private EnemyStatusIndicator _statusIndicator;
+    private EnemyVisionOutline _visionOutline;
+    private EnemyStateMachine _stateMachine;
 
-    private EnemyConfig boundConfig;
-    private Transform[] boundPatrolPoints;
-    private Transform boundPlayer;
-    private int boundObstacleMask;
-    private bool bindingsDirty = true;
+    private EnemyConfig _boundConfig;
+    private Transform[] _boundPatrolPoints;
+    private Transform _boundPlayer;
+    private int _boundObstacleMask;
+    private bool _bindingsDirty = true;
 
     public string SaveId => persistentId;
 
@@ -54,6 +55,7 @@ public class EnemyAI2D : MonoBehaviour
             return;
         }
 
+        ConfigureHackController(allowCreate: true);
         ConfigureStatusIndicator(allowCreate: true);
         ConfigureVisionOutline(allowCreate: true);
         InitializeRuntime();
@@ -63,24 +65,24 @@ public class EnemyAI2D : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (context == null || stateMachine == null)
+        if (_context == null || _stateMachine == null)
         {
             return;
         }
 
         ApplyContextBindings(force: false);
-        UpdateViewDirectionForCurrentState(stateMachine.CurrentState);
-        context.TickCooldowns(Time.fixedDeltaTime);
-        context.TickPerception(Time.fixedDeltaTime, stateMachine.CurrentState != EnemyState.Hacked);
+        UpdateViewDirectionForCurrentState(_stateMachine.CurrentState);
+        _context.TickCooldowns(Time.fixedDeltaTime);
+        _context.TickPerception(Time.fixedDeltaTime, _stateMachine.CurrentState != EnemyState.Hacked);
 
-        stateMachine.TickUpdate(Time.fixedDeltaTime);
-        stateMachine.TickFixed(Time.fixedDeltaTime);
+        _stateMachine.TickUpdate(Time.fixedDeltaTime);
+        _stateMachine.TickFixed(Time.fixedDeltaTime);
         SyncDebugRuntime();
     }
 
     private void LateUpdate()
     {
-        statusIndicator?.RefreshPresentation();
+        _statusIndicator?.RefreshPresentation();
         RefreshVisionOutline(allowCreate: true);
     }
 
@@ -93,7 +95,8 @@ public class EnemyAI2D : MonoBehaviour
             return;
         }
 
-        bindingsDirty = true;
+        _bindingsDirty = true;
+        ConfigureHackController(allowCreate: false);
         ConfigureStatusIndicator(allowCreate: false);
         ConfigureVisionOutline(allowCreate: false);
         ApplyContextBindings(force: false);
@@ -102,34 +105,17 @@ public class EnemyAI2D : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (stateMachine != null)
+        if (_stateMachine != null)
         {
-            stateMachine.StateChanged -= HandleStateChanged;
+            _stateMachine.StateChanged -= HandleStateChanged;
         }
-    }
-
-    public bool TryHack(float durationSeconds)
-    {
-        if (context == null || stateMachine == null)
-        {
-            return false;
-        }
-
-        if (stateMachine.CurrentState == EnemyState.Hacked && context.HackedTimer > 0f)
-        {
-            return false;
-        }
-
-        context.StartHack(durationSeconds);
-        stateMachine.TransitionTo(EnemyState.Hacked);
-        return true;
     }
 
     public EnemyRuntimeSaveData CaptureRuntimeState()
     {
-        EnemyState state = stateMachine?.CurrentState ?? EnemyState.Patrol;
-        Vector2 position = context?.Position ?? (Vector2)transform.position;
-        Vector2 lastKnown = context?.LastKnownPlayerPosition ?? position;
+        EnemyState state = _stateMachine?.CurrentState ?? EnemyState.Patrol;
+        Vector2 position = _context?.Position ?? (Vector2)transform.position;
+        Vector2 lastKnown = _context?.LastKnownPlayerPosition ?? position;
 
         return new EnemyRuntimeSaveData
         {
@@ -137,12 +123,12 @@ public class EnemyAI2D : MonoBehaviour
             posX = position.x,
             posY = position.y,
             state = state.ToString(),
-            patrolIndex = context?.PatrolIndex ?? 0,
-            suspicion = context?.Suspicion.Value ?? 0f,
-            timeSinceSeen = context?.TimeSinceSeenPlayer ?? 0f,
-            attackTimer = context?.AttackCooldownTimer ?? 0f,
-            searchTimer = context?.ReturnTimer ?? 0f,
-            hackedTimer = context?.HackedTimer ?? 0f,
+            patrolIndex = _context?.PatrolIndex ?? 0,
+            suspicion = _context?.Suspicion.Value ?? 0f,
+            timeSinceSeen = _context?.TimeSinceSeenPlayer ?? 0f,
+            attackTimer = _context?.AttackCooldownTimer ?? 0f,
+            searchTimer = _context?.ReturnTimer ?? 0f,
+            hackedTimer = _context?.HackedTimer ?? 0f,
             lastKnownX = lastKnown.x,
             lastKnownY = lastKnown.y
         };
@@ -155,7 +141,7 @@ public class EnemyAI2D : MonoBehaviour
             return;
         }
 
-        if (context == null || stateMachine == null)
+        if (_context == null || _stateMachine == null)
         {
             if (!ValidateDependencies())
             {
@@ -166,23 +152,23 @@ public class EnemyAI2D : MonoBehaviour
             ApplyContextBindings(force: true);
         }
 
-        context.Position = new Vector2(data.posX, data.posY);
-        context.PatrolIndex = Mathf.Max(0, data.patrolIndex);
-        context.Suspicion.Set(data.suspicion);
-        context.TimeSinceSeenPlayer = Mathf.Max(0f, data.timeSinceSeen);
-        context.AttackCooldownTimer = Mathf.Max(0f, data.attackTimer);
-        context.ReturnTimer = Mathf.Max(0f, data.searchTimer);
-        context.HackedTimer = Mathf.Max(0f, data.hackedTimer);
-        context.LastKnownPlayerPosition = new Vector2(data.lastKnownX, data.lastKnownY);
+        _context.Position = new Vector2(data.posX, data.posY);
+        _context.PatrolIndex = Mathf.Max(0, data.patrolIndex);
+        _context.Suspicion.Set(data.suspicion);
+        _context.TimeSinceSeenPlayer = Mathf.Max(0f, data.timeSinceSeen);
+        _context.AttackCooldownTimer = Mathf.Max(0f, data.attackTimer);
+        _context.ReturnTimer = Mathf.Max(0f, data.searchTimer);
+        _context.HackedTimer = Mathf.Max(0f, data.hackedTimer);
+        _context.LastKnownPlayerPosition = new Vector2(data.lastKnownX, data.lastKnownY);
 
         EnemyState restoredState = ParseState(data.state);
-        if (restoredState == EnemyState.Hacked && context.HackedTimer <= 0f)
+        if (restoredState == EnemyState.Hacked && _context.HackedTimer <= 0f)
         {
-            context.HackedTimer = 0.2f;
+            _context.HackedTimer = 0.2f;
         }
 
-        stateMachine.TransitionTo(restoredState);
-        UpdateViewDirectionForCurrentState(stateMachine.CurrentState);
+        _stateMachine.TransitionTo(restoredState);
+        UpdateViewDirectionForCurrentState(_stateMachine.CurrentState);
         SyncDebugRuntime();
     }
 
@@ -207,47 +193,48 @@ public class EnemyAI2D : MonoBehaviour
 
     private void InitializeRuntime()
     {
-        if (stateMachine != null)
+        if (_stateMachine != null)
         {
-            stateMachine.StateChanged -= HandleStateChanged;
+            _stateMachine.StateChanged -= HandleStateChanged;
         }
 
-        context = new EnemyContext(this, enemyConfig, rb, patrolPoints, player, obstacleMask);
-        context.EnsurePlayerReference();
+        _context = new EnemyContext(this, enemyConfig, rb, patrolPoints, player, obstacleMask);
+        _context.SetHackController(_hackController);
+        _context.EnsurePlayerReference();
 
-        if (player == null && context.Player != null)
+        if (player == null && _context.Player != null)
         {
-            player = context.Player;
+            player = _context.Player;
         }
 
-        if (context.Player != null)
+        if (_context.Player != null)
         {
-            context.LastKnownPlayerPosition = context.Player.position;
+            _context.LastKnownPlayerPosition = _context.Player.position;
         }
 
-        stateMachine = new EnemyStateMachine();
-        stateMachine.StateChanged += HandleStateChanged;
-        stateMachine.Register(new PatrolState(context, stateMachine));
-        stateMachine.Register(new ChaseState(context, stateMachine));
-        stateMachine.Register(new AttackState(context, stateMachine));
-        stateMachine.Register(new HackedState(context, stateMachine));
-        stateMachine.Register(new ReturnToPatrolState(context, stateMachine));
-        stateMachine.Initialize(EnemyState.Patrol);
-        UpdateViewDirectionForCurrentState(stateMachine.CurrentState);
+        _stateMachine = new EnemyStateMachine();
+        _stateMachine.StateChanged += HandleStateChanged;
+        _stateMachine.Register(new PatrolState(_context, _stateMachine));
+        _stateMachine.Register(new ChaseState(_context, _stateMachine));
+        _stateMachine.Register(new AttackState(_context, _stateMachine));
+        _stateMachine.Register(new HackedState(_context, _stateMachine));
+        _stateMachine.Register(new ReturnToPatrolState(_context, _stateMachine));
+        _stateMachine.Initialize(EnemyState.Patrol);
+        UpdateViewDirectionForCurrentState(_stateMachine.CurrentState);
     }
 
     private void ApplyContextBindings(bool force)
     {
-        if (context == null)
+        if (_context == null)
         {
             return;
         }
 
-        bool configChanged = boundConfig != enemyConfig;
-        bool patrolChanged = !ReferenceEquals(boundPatrolPoints, patrolPoints);
-        bool playerChanged = boundPlayer != player;
-        bool obstacleChanged = boundObstacleMask != obstacleMask.value;
-        bool shouldApply = force || bindingsDirty || configChanged || patrolChanged || playerChanged || obstacleChanged;
+        bool configChanged = _boundConfig != enemyConfig;
+        bool patrolChanged = !ReferenceEquals(_boundPatrolPoints, patrolPoints);
+        bool playerChanged = _boundPlayer != player;
+        bool obstacleChanged = _boundObstacleMask != obstacleMask.value;
+        bool shouldApply = force || _bindingsDirty || configChanged || patrolChanged || playerChanged || obstacleChanged;
 
         if (!shouldApply)
         {
@@ -256,127 +243,186 @@ public class EnemyAI2D : MonoBehaviour
 
         if (enemyConfig != null)
         {
-            context.SetConfig(enemyConfig);
+            _context.SetConfig(enemyConfig);
         }
 
-        context.SetPatrolPoints(patrolPoints);
-        context.ObstacleMask = obstacleMask;
+        _context.SetPatrolPoints(patrolPoints);
+        _context.ObstacleMask = obstacleMask;
+        _context.SetHackController(_hackController);
 
-        if (playerChanged || force || bindingsDirty)
+        if (playerChanged || force || _bindingsDirty)
         {
-            context.SetPlayer(player);
+            _context.SetPlayer(player);
         }
 
-        context.EnsurePlayerReference();
-        if (player == null && context.Player != null)
+        _context.EnsurePlayerReference();
+        if (player == null && _context.Player != null)
         {
-            player = context.Player;
+            player = _context.Player;
         }
 
-        boundConfig = enemyConfig;
-        boundPatrolPoints = patrolPoints;
-        boundPlayer = player;
-        boundObstacleMask = obstacleMask.value;
-        bindingsDirty = false;
+        _boundConfig = enemyConfig;
+        _boundPatrolPoints = patrolPoints;
+        _boundPlayer = player;
+        _boundObstacleMask = obstacleMask.value;
+        _bindingsDirty = false;
     }
 
     private void HandleStateChanged(EnemyState _, EnemyState toState)
     {
         currentState = toState;
-        statusIndicator?.ApplyState(currentState);
+        _statusIndicator?.ApplyState(currentState);
     }
 
     private void SyncDebugRuntime()
     {
-        if (context != null)
+        if (_context != null)
         {
-            suspicion = context.Suspicion.Value;
+            suspicion = _context.Suspicion.Value;
         }
     }
 
     private void ConfigureStatusIndicator(bool allowCreate)
     {
-        statusIndicator = EnsureStatusIndicatorComponent(allowCreate);
-        if (statusIndicator == null)
+        _statusIndicator = EnsureStatusIndicatorComponent(allowCreate);
+        if (_statusIndicator == null)
         {
             return;
         }
 
-        statusIndicator.Configure(statusText, statusOffset, allowCreate);
-        statusIndicator.ApplyState(currentState, allowCreate);
+        _statusIndicator.Configure(statusText, statusOffset, allowCreate);
+        _statusIndicator.ApplyState(currentState, allowCreate);
+    }
+
+    private void ConfigureHackController(bool allowCreate)
+    {
+        _hackController = EnsureHackControllerComponent(allowCreate);
+        if (_hackController != null)
+        {
+            _hackController.BindOwner(this);
+        }
+
+        if (_context != null)
+        {
+            _context.SetHackController(_hackController);
+        }
     }
 
     private void ConfigureVisionOutline(bool allowCreate)
     {
-        visionOutline = EnsureVisionOutlineComponent(allowCreate);
+        _visionOutline = EnsureVisionOutlineComponent(allowCreate);
     }
 
     private EnemyStatusIndicator EnsureStatusIndicatorComponent(bool allowCreate)
     {
-        if (statusIndicator != null)
+        if (_statusIndicator != null)
         {
-            return statusIndicator;
+            return _statusIndicator;
         }
 
-        statusIndicator = GetComponent<EnemyStatusIndicator>();
-        if (statusIndicator == null)
+        _statusIndicator = GetComponent<EnemyStatusIndicator>();
+        if (_statusIndicator == null)
         {
             if (!allowCreate)
             {
                 return null;
             }
 
-            statusIndicator = gameObject.AddComponent<EnemyStatusIndicator>();
+            _statusIndicator = gameObject.AddComponent<EnemyStatusIndicator>();
         }
 
-        return statusIndicator;
+        return _statusIndicator;
     }
 
     private EnemyVisionOutline EnsureVisionOutlineComponent(bool allowCreate)
     {
-        if (visionOutline != null)
+        if (_visionOutline != null)
         {
-            return visionOutline;
+            return _visionOutline;
         }
 
-        visionOutline = GetComponent<EnemyVisionOutline>();
-        if (visionOutline == null)
+        _visionOutline = GetComponent<EnemyVisionOutline>();
+        if (_visionOutline == null)
         {
             if (!allowCreate)
             {
                 return null;
             }
 
-            visionOutline = gameObject.AddComponent<EnemyVisionOutline>();
+            _visionOutline = gameObject.AddComponent<EnemyVisionOutline>();
         }
 
-        return visionOutline;
+        return _visionOutline;
+    }
+
+    private EnemyHackController EnsureHackControllerComponent(bool allowCreate)
+    {
+        if (_hackController != null)
+        {
+            return _hackController;
+        }
+
+        _hackController = GetComponent<EnemyHackController>();
+        if (_hackController == null)
+        {
+            if (!allowCreate)
+            {
+                return null;
+            }
+
+            _hackController = gameObject.AddComponent<EnemyHackController>();
+        }
+
+        return _hackController;
+    }
+
+    internal bool TryBeginHackInternal(float baseDuration)
+    {
+        if (_context == null || _stateMachine == null)
+        {
+            if (!ValidateDependencies())
+            {
+                return false;
+            }
+
+            InitializeRuntime();
+            ApplyContextBindings(force: true);
+        }
+
+        if (_stateMachine.CurrentState == EnemyState.Hacked && _context.HackedTimer > 0f)
+        {
+            return false;
+        }
+
+        _context.StartHack(baseDuration);
+        _stateMachine.TransitionTo(EnemyState.Hacked);
+        return true;
     }
 
     private void RefreshVisionOutline(bool allowCreate)
     {
-        visionOutline = EnsureVisionOutlineComponent(allowCreate);
-        if (visionOutline == null)
+        _visionOutline = EnsureVisionOutlineComponent(allowCreate);
+        if (_visionOutline == null)
         {
             return;
         }
 
-        Vector3 origin = context != null ? (Vector3)context.Position : transform.position;
-        Vector2 viewDirection = context != null ? context.ViewDirection : Vector2.right;
+        Vector3 origin = _context != null ? (Vector3)_context.Position : transform.position;
+        Vector2 viewDirection = _context != null ? _context.ViewDirection : Vector2.right;
         float radius = enemyConfig != null ? Mathf.Max(0f, enemyConfig.visionRadius) : 0f;
-        float closeVisionRadius = context != null
-            ? context.CloseVisionRadius
+        float closeVisionRadius = _context != null
+            ? _context.CloseVisionRadius
             : enemyConfig != null
                 ? Mathf.Max(1f, enemyConfig.attackRadius)
                 : 1f;
-        float coneAngleDegrees = context != null
-            ? context.ViewConeAngleDegrees
+        float coneAngleDegrees = _context != null
+            ? _context.ViewConeAngleDegrees
             : enemyConfig != null
                 ? Mathf.Clamp(enemyConfig.visionConeAngleDegrees, 1f, 360f)
                 : 90f;
-        bool shouldShow = context != null && currentState != EnemyState.Hacked;
+        bool shouldShow = _context != null && currentState != EnemyState.Hacked;
 
-        visionOutline.RefreshOutline(
+        _visionOutline.RefreshOutline(
             origin,
             viewDirection,
             radius,
@@ -388,7 +434,7 @@ public class EnemyAI2D : MonoBehaviour
 
     private void UpdateViewDirectionForCurrentState(EnemyState state)
     {
-        if (context == null)
+        if (_context == null)
         {
             return;
         }
@@ -396,23 +442,24 @@ public class EnemyAI2D : MonoBehaviour
         switch (state)
         {
             case EnemyState.Patrol:
-            case EnemyState.Hacked:
                 if (TryGetPatrolFacingTarget(out Vector2 patrolTarget))
                 {
-                    context.UpdateViewDirectionTowards(patrolTarget);
+                    _context.UpdateViewDirectionTowards(patrolTarget);
                 }
                 break;
+            case EnemyState.Hacked:
+                break;
             case EnemyState.Chase:
-                context.UpdateViewDirectionTowards(context.LastKnownPlayerPosition);
+                _context.UpdateViewDirectionTowards(_context.LastKnownPlayerPosition);
                 break;
             case EnemyState.Attack:
-                if (context.Player != null)
+                if (_context.Player != null)
                 {
-                    context.UpdateViewDirectionTowards(context.Player.position);
+                    _context.UpdateViewDirectionTowards(_context.Player.position);
                 }
                 break;
             case EnemyState.ReturnToPatrol:
-                context.UpdateViewDirectionTowards(context.LastKnownPlayerPosition);
+                _context.UpdateViewDirectionTowards(_context.LastKnownPlayerPosition);
                 break;
         }
     }
@@ -421,13 +468,13 @@ public class EnemyAI2D : MonoBehaviour
     {
         patrolTarget = default;
 
-        Transform[] points = context?.PatrolPoints;
+        Transform[] points = _context?.PatrolPoints;
         if (points == null || points.Length == 0)
         {
             return false;
         }
 
-        int patrolIndex = context.PatrolIndex;
+        int patrolIndex = _context.PatrolIndex;
         if (patrolIndex < 0 || patrolIndex >= points.Length)
         {
             patrolIndex = 0;
@@ -440,7 +487,7 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         patrolTarget = currentPatrolPoint.position;
-        if (context.IsNear(patrolTarget, 0.2f))
+        if (_context.IsNear(patrolTarget, 0.2f))
         {
             Transform nextPatrolPoint = points[(patrolIndex + 1) % points.Length];
             if (nextPatrolPoint != null)
