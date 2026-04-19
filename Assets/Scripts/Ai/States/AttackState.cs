@@ -1,52 +1,43 @@
-public class AttackState : IEnemyState
+public class AttackState : EnemyStateBase
 {
-    private readonly EnemyContext _context;
-    private readonly EnemyStateMachine _stateMachine;
-
     public AttackState(EnemyContext context, EnemyStateMachine stateMachine)
-    {
-        _context = context;
-        _stateMachine = stateMachine;
-    }
-
-    public EnemyState StateType => EnemyState.Attack;
-
-    public void Enter()
+        : base(context, stateMachine)
     {
     }
 
-    public void Exit()
-    {
-    }
+    public override EnemyState StateType => EnemyState.Attack;
 
-    public void TickUpdate(float deltaTime)
+    public override void Enter() { }
+    public override void Exit() { }
+
+    public override void TickUpdate(float deltaTime)
     {
-        if (_context.Config == null)
+        if (Config == null)
         {
             return;
         }
 
-        if (_context.DistanceToPlayer > _context.Config.attackRadius)
+        if (Context.DistanceToPlayer > Config.attackRadius)
         {
-            if (_context.TimeSinceSeenPlayer >= _context.Config.loseSightTime)
+            if (Context.TimeSinceSeenPlayer >= Config.loseSightTime)
             {
-                _stateMachine.TransitionTo(EnemyState.ReturnToPatrol);
+                StateMachine.TransitionTo(EnemyState.ReturnToPatrol);
             }
             else
             {
-                _stateMachine.TransitionTo(EnemyState.Chase);
+                StateMachine.TransitionTo(EnemyState.Chase);
             }
             return;
         }
 
-        if (!_context.CanSeePlayer && _context.TimeSinceSeenPlayer >= _context.Config.loseSightTime)
+        if (!Context.CanSeePlayer && Context.TimeSinceSeenPlayer >= Config.loseSightTime)
         {
-            _stateMachine.TransitionTo(EnemyState.ReturnToPatrol);
+            StateMachine.TransitionTo(EnemyState.ReturnToPatrol);
         }
     }
 
-    public void TickFixed(float fixedDeltaTime)
+    public override void TickFixed(float fixedDeltaTime)
     {
-        _context.TryAttackPlayer();
+        Context.TryAttackPlayer();
     }
 }

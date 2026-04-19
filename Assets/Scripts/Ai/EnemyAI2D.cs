@@ -2,23 +2,6 @@ using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-[Serializable]
-public class EnemyRuntimeSaveData
-{
-    public string saveId;
-    public float posX;
-    public float posY;
-    public string state;
-    public int patrolIndex;
-    public float suspicion;
-    public float timeSinceSeen;
-    public float attackTimer;
-    public float searchTimer;
-    public float hackedTimer;
-    public float lastKnownX;
-    public float lastKnownY;
-}
-
 public class EnemyAI2D : MonoBehaviour
 {
     [Header("Identity")]
@@ -26,27 +9,28 @@ public class EnemyAI2D : MonoBehaviour
 
     [Header("Config")]
     [FormerlySerializedAs("archetype")]
-    public EnemyConfig enemyConfig;
+    [SerializeField] private EnemyConfig enemyConfig;
 
     [Header("Refs")]
-    public Rigidbody2D rb;
-    public Transform[] patrolPoints;
-    public Transform player;
+    [SerializeField] private Rigidbody2D rb;
+    [SerializeField] private Transform[] patrolPoints;
+    [SerializeField] private Transform player;
 
     [Header("Perception")]
-    public LayerMask obstacleMask;
+    [SerializeField] private LayerMask obstacleMask;
 
     [Header("Status Indicator")]
-    public TextMesh statusText;
-    public Vector3 statusOffset = new Vector3(0f, 1.4f, 0f);
+    [SerializeField] private TextMesh statusText;
+    [SerializeField] private Vector3 statusOffset = new Vector3(0f, 1.4f, 0f);
 
     [Header("Debug Runtime")]
     [SerializeField] private EnemyState currentState = EnemyState.Patrol;
     [SerializeField, Range(0f, 1f)] private float suspicion;
 
     private EnemyContext context;
+    private EnemyStatusIndicator statusIndicator;
+    private EnemyVisionOutline visionOutline;
     private EnemyStateMachine stateMachine;
-    private Camera mainCamera;
 
     private EnemyConfig boundConfig;
     private Transform[] boundPatrolPoints;
@@ -70,7 +54,8 @@ public class EnemyAI2D : MonoBehaviour
             return;
         }
 
-        EnsureStatusIndicator();
+        ConfigureStatusIndicator(allowCreate: true);
+        ConfigureVisionOutline(allowCreate: true);
         InitializeRuntime();
         ApplyContextBindings(force: true);
         SyncDebugRuntime();
@@ -84,6 +69,7 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         ApplyContextBindings(force: false);
+        UpdateViewDirectionForCurrentState(stateMachine.CurrentState);
         context.TickCooldowns(Time.fixedDeltaTime);
         context.TickPerception(Time.fixedDeltaTime, stateMachine.CurrentState != EnemyState.Hacked);
 
@@ -94,22 +80,8 @@ public class EnemyAI2D : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (statusText == null)
-        {
-            return;
-        }
-
-        statusText.transform.localPosition = statusOffset;
-
-        if (mainCamera == null)
-        {
-            mainCamera = Camera.main;
-        }
-
-        if (mainCamera != null)
-        {
-            statusText.transform.rotation = mainCamera.transform.rotation;
-        }
+        statusIndicator?.RefreshPresentation();
+        RefreshVisionOutline(allowCreate: true);
     }
 
     private void OnValidate()
@@ -122,7 +94,10 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         bindingsDirty = true;
+        ConfigureStatusIndicator(allowCreate: false);
+        ConfigureVisionOutline(allowCreate: false);
         ApplyContextBindings(force: false);
+        RefreshVisionOutline(allowCreate: false);
     }
 
     private void OnDestroy()
@@ -207,6 +182,7 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         stateMachine.TransitionTo(restoredState);
+        UpdateViewDirectionForCurrentState(stateMachine.CurrentState);
         SyncDebugRuntime();
     }
 
@@ -257,6 +233,7 @@ public class EnemyAI2D : MonoBehaviour
         stateMachine.Register(new HackedState(context, stateMachine));
         stateMachine.Register(new ReturnToPatrolState(context, stateMachine));
         stateMachine.Initialize(EnemyState.Patrol);
+        UpdateViewDirectionForCurrentState(stateMachine.CurrentState);
     }
 
     private void ApplyContextBindings(bool force)
@@ -306,7 +283,7 @@ public class EnemyAI2D : MonoBehaviour
     private void HandleStateChanged(EnemyState _, EnemyState toState)
     {
         currentState = toState;
-        UpdateStatusVisual();
+        statusIndicator?.ApplyState(currentState);
     }
 
     private void SyncDebugRuntime()
@@ -317,71 +294,162 @@ public class EnemyAI2D : MonoBehaviour
         }
     }
 
-    private void EnsureStatusIndicator()
+    private void ConfigureStatusIndicator(bool allowCreate)
     {
-        if (statusText != null)
+        statusIndicator = EnsureStatusIndicatorComponent(allowCreate);
+        if (statusIndicator == null)
         {
             return;
         }
 
-        Transform existing = transform.Find("StateIndicator");
-        if (existing != null)
+        statusIndicator.Configure(statusText, statusOffset, allowCreate);
+        statusIndicator.ApplyState(currentState, allowCreate);
+    }
+
+    private void ConfigureVisionOutline(bool allowCreate)
+    {
+        visionOutline = EnsureVisionOutlineComponent(allowCreate);
+    }
+
+    private EnemyStatusIndicator EnsureStatusIndicatorComponent(bool allowCreate)
+    {
+        if (statusIndicator != null)
         {
-            statusText = existing.GetComponent<TextMesh>();
-            if (statusText != null)
-            {
-                return;
-            }
+            return statusIndicator;
         }
 
-        GameObject indicator = new GameObject("StateIndicator");
-        indicator.transform.SetParent(transform, false);
-        indicator.transform.localPosition = statusOffset;
-
-        statusText = indicator.AddComponent<TextMesh>();
-        statusText.text = "P";
-        statusText.fontSize = 72;
-        statusText.characterSize = 0.08f;
-        statusText.anchor = TextAnchor.MiddleCenter;
-        statusText.alignment = TextAlignment.Center;
-
-        MeshRenderer meshRenderer = statusText.GetComponent<MeshRenderer>();
-        if (meshRenderer != null)
+        statusIndicator = GetComponent<EnemyStatusIndicator>();
+        if (statusIndicator == null)
         {
-            meshRenderer.sortingOrder = 2000;
+            if (!allowCreate)
+            {
+                return null;
+            }
+
+            statusIndicator = gameObject.AddComponent<EnemyStatusIndicator>();
+        }
+
+        return statusIndicator;
+    }
+
+    private EnemyVisionOutline EnsureVisionOutlineComponent(bool allowCreate)
+    {
+        if (visionOutline != null)
+        {
+            return visionOutline;
+        }
+
+        visionOutline = GetComponent<EnemyVisionOutline>();
+        if (visionOutline == null)
+        {
+            if (!allowCreate)
+            {
+                return null;
+            }
+
+            visionOutline = gameObject.AddComponent<EnemyVisionOutline>();
+        }
+
+        return visionOutline;
+    }
+
+    private void RefreshVisionOutline(bool allowCreate)
+    {
+        visionOutline = EnsureVisionOutlineComponent(allowCreate);
+        if (visionOutline == null)
+        {
+            return;
+        }
+
+        Vector3 origin = context != null ? (Vector3)context.Position : transform.position;
+        Vector2 viewDirection = context != null ? context.ViewDirection : Vector2.right;
+        float radius = enemyConfig != null ? Mathf.Max(0f, enemyConfig.visionRadius) : 0f;
+        float closeVisionRadius = context != null
+            ? context.CloseVisionRadius
+            : enemyConfig != null
+                ? Mathf.Max(1f, enemyConfig.attackRadius)
+                : 1f;
+        float coneAngleDegrees = context != null
+            ? context.ViewConeAngleDegrees
+            : enemyConfig != null
+                ? Mathf.Clamp(enemyConfig.visionConeAngleDegrees, 1f, 360f)
+                : 90f;
+        bool shouldShow = context != null && currentState != EnemyState.Hacked;
+
+        visionOutline.RefreshOutline(
+            origin,
+            viewDirection,
+            radius,
+            closeVisionRadius,
+            coneAngleDegrees,
+            shouldShow,
+            allowCreate);
+    }
+
+    private void UpdateViewDirectionForCurrentState(EnemyState state)
+    {
+        if (context == null)
+        {
+            return;
+        }
+
+        switch (state)
+        {
+            case EnemyState.Patrol:
+            case EnemyState.Hacked:
+                if (TryGetPatrolFacingTarget(out Vector2 patrolTarget))
+                {
+                    context.UpdateViewDirectionTowards(patrolTarget);
+                }
+                break;
+            case EnemyState.Chase:
+                context.UpdateViewDirectionTowards(context.LastKnownPlayerPosition);
+                break;
+            case EnemyState.Attack:
+                if (context.Player != null)
+                {
+                    context.UpdateViewDirectionTowards(context.Player.position);
+                }
+                break;
+            case EnemyState.ReturnToPatrol:
+                context.UpdateViewDirectionTowards(context.LastKnownPlayerPosition);
+                break;
         }
     }
 
-    private void UpdateStatusVisual()
+    private bool TryGetPatrolFacingTarget(out Vector2 patrolTarget)
     {
-        if (statusText == null)
+        patrolTarget = default;
+
+        Transform[] points = context?.PatrolPoints;
+        if (points == null || points.Length == 0)
         {
-            return;
+            return false;
         }
 
-        switch (currentState)
+        int patrolIndex = context.PatrolIndex;
+        if (patrolIndex < 0 || patrolIndex >= points.Length)
         {
-            case EnemyState.Patrol:
-                statusText.text = "P";
-                statusText.color = new Color(0.55f, 0.95f, 0.55f);
-                break;
-            case EnemyState.Chase:
-                statusText.text = "C";
-                statusText.color = new Color(1f, 0.9f, 0.3f);
-                break;
-            case EnemyState.Attack:
-                statusText.text = "A";
-                statusText.color = new Color(1f, 0.35f, 0.35f);
-                break;
-            case EnemyState.Hacked:
-                statusText.text = "H";
-                statusText.color = new Color(0.8f, 0.55f, 1f);
-                break;
-            case EnemyState.ReturnToPatrol:
-                statusText.text = "R";
-                statusText.color = new Color(0.45f, 0.95f, 1f);
-                break;
+            patrolIndex = 0;
         }
+
+        Transform currentPatrolPoint = points[patrolIndex];
+        if (currentPatrolPoint == null)
+        {
+            return false;
+        }
+
+        patrolTarget = currentPatrolPoint.position;
+        if (context.IsNear(patrolTarget, 0.2f))
+        {
+            Transform nextPatrolPoint = points[(patrolIndex + 1) % points.Length];
+            if (nextPatrolPoint != null)
+            {
+                patrolTarget = nextPatrolPoint.position;
+            }
+        }
+
+        return true;
     }
 
     private static EnemyState ParseState(string rawState)

@@ -1,43 +1,37 @@
-public class HackedState : IEnemyState
+public class HackedState : EnemyStateBase
 {
-    private readonly EnemyContext _context;
-    private readonly EnemyStateMachine _stateMachine;
-
     public HackedState(EnemyContext context, EnemyStateMachine stateMachine)
-    {
-        _context = context;
-        _stateMachine = stateMachine;
-    }
-
-    public EnemyState StateType => EnemyState.Hacked;
-
-    public void Enter()
-    {
-        _context.Suspicion.Reset();
-        _context.ReturnTimer = 0f;
-    }
-
-    public void Exit()
+        : base(context, stateMachine)
     {
     }
 
-    public void TickUpdate(float deltaTime)
+    public override EnemyState StateType => EnemyState.Hacked;
+
+    public override void Enter()
     {
-        _context.HackedTimer -= deltaTime;
-        if (_context.HackedTimer <= 0f)
+        Context.Suspicion.Reset();
+        Context.ResetReturnTimer();
+    }
+
+    public override void Exit() { }
+
+    public override void TickUpdate(float deltaTime)
+    {
+        Context.HackedTimer -= deltaTime;
+        if (Context.HackedTimer <= 0f)
         {
-            _context.HackedTimer = 0f;
-            _stateMachine.TransitionTo(EnemyState.Patrol);
+            Context.HackedTimer = 0f;
+            StateMachine.TransitionTo(EnemyState.Patrol);
         }
     }
 
-    public void TickFixed(float fixedDeltaTime)
+    public override void TickFixed(float fixedDeltaTime)
     {
-        if (_context.Config == null)
+        if (Config == null)
         {
             return;
         }
 
-        _context.MoveAlongPatrol(_context.Config.patrolSpeed, fixedDeltaTime);
+        Context.MoveAlongPatrol(Config.patrolSpeed, fixedDeltaTime);
     }
 }

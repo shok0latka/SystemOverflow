@@ -1,57 +1,49 @@
-using UnityEngine;
-
-public class ReturnToPatrolState : IEnemyState
+public class ReturnToPatrolState : EnemyStateBase
 {
-    private readonly EnemyContext _context;
-    private readonly EnemyStateMachine _stateMachine;
-
     public ReturnToPatrolState(EnemyContext context, EnemyStateMachine stateMachine)
-    {
-        this._context = context;
-        this._stateMachine = stateMachine;
-    }
-
-    public EnemyState StateType => EnemyState.ReturnToPatrol;
-
-    public void Enter()
-    {
-        _context.ReturnTimer = 0f;
-    }
-
-    public void Exit()
+        : base(context, stateMachine)
     {
     }
 
-    public void TickUpdate(float deltaTime)
+    public override EnemyState StateType => EnemyState.ReturnToPatrol;
+
+    public override void Enter()
     {
-        if (_context.Config == null)
+        Context.ResetReturnTimer();
+    }
+
+    public override void Exit() { }
+
+    public override void TickUpdate(float deltaTime)
+    {
+        if (Config == null)
         {
             return;
         }
 
-        _context.ReturnTimer += deltaTime;
+        Context.ReturnTimer += deltaTime;
 
-        if (_context.CanSeePlayer && _context.Suspicion.IsTriggered(_context.Config.suspicionThreshold))
+        if (Context.CanSeePlayer)
         {
-            _stateMachine.TransitionTo(EnemyState.Chase);
+            StateMachine.TransitionTo(EnemyState.Chase);
             return;
         }
 
-        bool reachedLastKnown = _context.IsNear(_context.LastKnownPlayerPosition, 0.2f);
-        bool timeoutReached = _context.ReturnTimer >= _context.Config.searchDuration;
+        bool reachedLastKnown = Context.IsNear(Context.LastKnownPlayerPosition, 0.2f);
+        bool timeoutReached = Context.ReturnTimer >= Config.searchDuration;
         if (reachedLastKnown || timeoutReached)
         {
-            _stateMachine.TransitionTo(EnemyState.Patrol);
+            StateMachine.TransitionTo(EnemyState.Patrol);
         }
     }
 
-    public void TickFixed(float fixedDeltaTime)
+    public override void TickFixed(float fixedDeltaTime)
     {
-        if (_context.Config == null)
+        if (Config == null)
         {
             return;
         }
 
-        _context.MoveTowards(_context.LastKnownPlayerPosition, _context.Config.patrolSpeed, fixedDeltaTime);
+        Context.MoveTowards(Context.LastKnownPlayerPosition, Config.patrolSpeed, fixedDeltaTime);
     }
 }

@@ -4,24 +4,10 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-[Serializable]
-public class PlayerSaveData
-{
-    public float posX;
-    public float posY;
-    public int currentHp;
-}
-
-[Serializable]
-public class SaveData
-{
-    public string sceneName;
-    public PlayerSaveData player = new PlayerSaveData();
-    public List<EnemyRuntimeSaveData> enemies = new List<EnemyRuntimeSaveData>();
-}
-
 public class SaveSystem : MonoBehaviour
 {
+    private static bool _skipNextAutoLoad;
+
     [Header("Behavior")]
     public bool autoLoadOnStart = true;
     public bool autoSave = true;
@@ -30,22 +16,27 @@ public class SaveSystem : MonoBehaviour
     [Header("Refs")]
     public Transform player;
 
-    private string savePath;
-    private float saveTimer;
+    private string _savePath;
+    private float _saveTimer;
 
     private void Awake()
     {
-        savePath = Path.Combine(Application.persistentDataPath, "save.json");
+        _savePath = Path.Combine(Application.persistentDataPath, "save.json");
     }
 
     private void Start()
     {
-        saveTimer = Mathf.Max(0.2f, autoSaveInterval);
+        _saveTimer = Mathf.Max(0.2f, autoSaveInterval);
 
-        if (autoLoadOnStart)
+        if (autoLoadOnStart && !ConsumeSkipNextAutoLoad())
         {
             LoadCurrentScene();
         }
+    }
+
+    public static void SkipAutoLoadOnce()
+    {
+        _skipNextAutoLoad = true;
     }
 
     private void Update()
@@ -55,14 +46,14 @@ public class SaveSystem : MonoBehaviour
             return;
         }
 
-        saveTimer -= Time.unscaledDeltaTime;
-        if (saveTimer > 0f)
+        _saveTimer -= Time.unscaledDeltaTime;
+        if (_saveTimer > 0f)
         {
             return;
         }
 
         SaveCurrentScene();
-        saveTimer = Mathf.Max(0.2f, autoSaveInterval);
+        _saveTimer = Mathf.Max(0.2f, autoSaveInterval);
     }
 
     public void SaveCurrentScene()
@@ -89,7 +80,7 @@ public class SaveSystem : MonoBehaviour
         try
         {
             string json = JsonUtility.ToJson(data, true);
-            File.WriteAllText(savePath, json);
+            File.WriteAllText(_savePath, json);
         }
         catch (Exception exception)
         {
@@ -99,7 +90,7 @@ public class SaveSystem : MonoBehaviour
 
     public void LoadCurrentScene()
     {
-        if (!File.Exists(savePath))
+        if (!File.Exists(_savePath))
         {
             return;
         }
@@ -107,7 +98,7 @@ public class SaveSystem : MonoBehaviour
         SaveData data;
         try
         {
-            data = JsonUtility.FromJson<SaveData>(File.ReadAllText(savePath));
+            data = JsonUtility.FromJson<SaveData>(File.ReadAllText(_savePath));
         }
         catch (Exception exception)
         {
@@ -206,5 +197,16 @@ public class SaveSystem : MonoBehaviour
         }
 
         return player;
+    }
+
+    private static bool ConsumeSkipNextAutoLoad()
+    {
+        if (!_skipNextAutoLoad)
+        {
+            return false;
+        }
+
+        _skipNextAutoLoad = false;
+        return true;
     }
 }

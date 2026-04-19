@@ -1,45 +1,39 @@
-public class PatrolState : IEnemyState
+public class PatrolState : EnemyStateBase
 {
-    private readonly EnemyContext _context;
-    private readonly EnemyStateMachine _stateMachine;
-
     public PatrolState(EnemyContext context, EnemyStateMachine stateMachine)
-    {
-        _context = context;
-        _stateMachine = stateMachine;
-    }
-
-    public EnemyState StateType => EnemyState.Patrol;
-
-    public void Enter()
-    {
-        _context.ReturnTimer = 0f;
-    }
-
-    public void Exit()
+        : base(context, stateMachine)
     {
     }
 
-    public void TickUpdate(float deltaTime)
+    public override EnemyState StateType => EnemyState.Patrol;
+
+    public override void Enter()
     {
-        if (_context.Config == null)
+        Context.ResetReturnTimer();
+    }
+
+    public override void Exit() { }
+
+    public override void TickUpdate(float deltaTime)
+    {
+        if (Config == null)
         {
             return;
         }
 
-        if (_context.Suspicion.IsTriggered(_context.Config.suspicionThreshold))
+        if (Context.Suspicion.IsTriggered(Config.suspicionThreshold))
         {
-            _stateMachine.TransitionTo(EnemyState.Chase);
+            StateMachine.TransitionTo(EnemyState.Chase);
         }
     }
 
-    public void TickFixed(float fixedDeltaTime)
+    public override void TickFixed(float fixedDeltaTime)
     {
-        if (_context.Config == null)
+        if (Config == null)
         {
             return;
         }
 
-        _context.MoveAlongPatrol(_context.Config.patrolSpeed, fixedDeltaTime);
+        Context.MoveAlongPatrol(Config.patrolSpeed, fixedDeltaTime);
     }
 }

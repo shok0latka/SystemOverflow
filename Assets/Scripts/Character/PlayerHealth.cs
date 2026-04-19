@@ -49,6 +49,7 @@ public class PlayerHealth : MonoBehaviour
             return;
         }
 
+        SaveSystem.SkipAutoLoadOnce();
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

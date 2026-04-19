@@ -1,51 +1,48 @@
-public class ChaseState : IEnemyState
+public class ChaseState : EnemyStateBase
 {
-    private readonly EnemyContext _context;
-    private readonly EnemyStateMachine _stateMachine;
-
     public ChaseState(EnemyContext context, EnemyStateMachine stateMachine)
-    {
-        _context = context;
-        _stateMachine = stateMachine;
-    }
-
-    public EnemyState StateType => EnemyState.Chase;
-
-    public void Enter()
-    {
-        _context.ReturnTimer = 0f;
-    }
-
-    public void Exit()
+        : base(context, stateMachine)
     {
     }
 
-    public void TickUpdate(float deltaTime)
+    public override EnemyState StateType => EnemyState.Chase;
+
+    public override void Enter()
     {
-        if (_context.Config == null)
+        Context.ResetReturnTimer();
+    }
+
+    public override void Exit()
+    {
+        
+    }
+
+    public override void TickUpdate(float deltaTime)
+    {
+        if (Config == null)
         {
             return;
         }
 
-        if (_context.DistanceToPlayer <= _context.Config.attackRadius && _context.CanSeePlayer)
+        if (Context.DistanceToPlayer <= Config.attackRadius && Context.CanSeePlayer)
         {
-            _stateMachine.TransitionTo(EnemyState.Attack);
+            StateMachine.TransitionTo(EnemyState.Attack);
             return;
         }
 
-        if (_context.TimeSinceSeenPlayer >= _context.Config.loseSightTime)
+        if (Context.TimeSinceSeenPlayer >= Config.loseSightTime)
         {
-            _stateMachine.TransitionTo(EnemyState.ReturnToPatrol);
+            StateMachine.TransitionTo(EnemyState.ReturnToPatrol);
         }
     }
 
-    public void TickFixed(float fixedDeltaTime)
+    public override void TickFixed(float fixedDeltaTime)
     {
-        if (_context.Config == null)
+        if (Config == null)
         {
             return;
         }
 
-        _context.MoveTowards(_context.LastKnownPlayerPosition, _context.Config.chaseSpeed, fixedDeltaTime);
+        Context.MoveTowards(Context.LastKnownPlayerPosition, Config.chaseSpeed, fixedDeltaTime);
     }
 }

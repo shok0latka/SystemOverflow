@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "EnemyConfig", menuName = "SystemOverflow/Enemy Config")]
 public class EnemyConfig : ScriptableObject
@@ -8,7 +9,9 @@ public class EnemyConfig : ScriptableObject
     public float chaseSpeed = 3.2f;
 
     [Header("Perception")]
-    public float detectRadius = 6f;
+    [FormerlySerializedAs("detectRadius")]
+    public float visionRadius = 6f;
+    [Range(1f, 360f)] public float visionConeAngleDegrees = 90f;
     public float loseSightTime = 1.2f;
     public float suspicionGainPerSecond = 0.9f;
     public float suspicionDecayPerSecond = 0.4f;

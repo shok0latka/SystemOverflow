@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class EnemyContext
 {
+    private const float DefaultViewConeAngleDegrees = 90f;
+
     private readonly EnemyAI2D _owner;
 
     public EnemyContext(
@@ -38,6 +40,12 @@ public class EnemyContext
     public float DistanceToPlayer { get; private set; } = float.MaxValue;
     public Vector2 LastKnownPlayerPosition { get; set; }
     public float TimeSinceSeenPlayer { get; set; }
+    public Vector2 ViewDirection { get; private set; } = Vector2.right;
+    public float CloseVisionRadius => Config != null ? Mathf.Max(1f, Config.attackRadius) : 1f;
+    public float ViewConeAngleDegrees => Config != null
+        ? Mathf.Clamp(Config.visionConeAngleDegrees, 1f, 360f)
+        : DefaultViewConeAngleDegrees;
+    public float HalfViewConeAngleDegrees => ViewConeAngleDegrees * 0.5f;
 
     public int PatrolIndex { get; set; }
     public float AttackCooldownTimer { get; set; }
@@ -134,6 +142,26 @@ public class EnemyContext
     public void TickCooldowns(float deltaTime)
     {
         AttackCooldownTimer = Mathf.Max(0f, AttackCooldownTimer - deltaTime);
+    }
+
+    public void UpdateViewDirection(Vector2 direction)
+    {
+        if (direction.sqrMagnitude < 0.0001f)
+        {
+            return;
+        }
+
+        ViewDirection = direction.normalized;
+    }
+
+    public void UpdateViewDirectionTowards(Vector2 target)
+    {
+        UpdateViewDirection(target - Position);
+    }
+
+    public void ResetReturnTimer()
+    {
+        ReturnTimer = 0f;
     }
 
     public void MoveTowards(Vector2 target, float speed, float fixedDeltaTime)
@@ -246,17 +274,47 @@ public class EnemyContext
 
         Vector2 origin = Rigidbody.position;
         Vector2 toPlayer = (Vector2)Player.position - origin;
-        if (toPlayer.magnitude > Mathf.Max(0.1f, Config.detectRadius))
+        float distanceToPlayer = toPlayer.magnitude;
+        float visionRadius = Mathf.Max(0.1f, Config.visionRadius);
+        float closeVisionRadius = CloseVisionRadius;
+        if (distanceToPlayer > Mathf.Max(visionRadius, closeVisionRadius))
         {
             return false;
         }
 
+        if (distanceToPlayer < 0.0001f)
+        {
+            return true;
+        }
+
+        if (!HasClearPathToPlayer(origin, toPlayer, distanceToPlayer))
+        {
+            return false;
+        }
+
+        if (distanceToPlayer <= closeVisionRadius)
+        {
+            return true;
+        }
+
+        if (distanceToPlayer > visionRadius)
+        {
+            return false;
+        }
+
+        Vector2 directionToPlayer = toPlayer / distanceToPlayer;
+        float minimumDot = Mathf.Cos(HalfViewConeAngleDegrees * Mathf.Deg2Rad);
+        return Vector2.Dot(ViewDirection, directionToPlayer) >= minimumDot;
+    }
+
+    private bool HasClearPathToPlayer(Vector2 origin, Vector2 toPlayer, float distanceToPlayer)
+    {
         if (ObstacleMask.value == 0)
         {
             return true;
         }
 
-        RaycastHit2D hit = Physics2D.Raycast(origin, toPlayer.normalized, toPlayer.magnitude, ObstacleMask);
+        RaycastHit2D hit = Physics2D.Raycast(origin, toPlayer / distanceToPlayer, distanceToPlayer, ObstacleMask);
         return hit.collider == null;
     }
 }
