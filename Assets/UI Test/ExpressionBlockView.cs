@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Script.Core.Expressions;
+using Script.Core.Utils;
 using Script.Core.Expressions.BinaryExpressions;
 using UnityEngine.UIElements;
 using UnityEngine;
@@ -58,7 +59,7 @@ public class ExpressionBlockView : VisualElement, IExpressionSlotHost
         Slots.Add(left);
         Add(left);
 
-        var op = new Label(GetOperatorText(expr.Tag));
+        var op = new Label(BinaryTagOperations.GetOperatorText(expr.Tag));
         op.AddToClassList("expr-separator");
         Add(op);
 
@@ -173,27 +174,5 @@ public class ExpressionBlockView : VisualElement, IExpressionSlotHost
             Slots.Add(slot);
             Add(slot);
         }
-    }
-
-    static string GetOperatorText(BinaryOperatorTag tag)
-    {
-        return tag switch
-        {
-            BinaryOperatorTag.Addition => "+",
-            BinaryOperatorTag.Subtraction => "-",
-            BinaryOperatorTag.Multiplication => "*",
-            BinaryOperatorTag.Division => "/",
-            BinaryOperatorTag.Reminder => "%",
-            BinaryOperatorTag.LogicalAnd => "&&",
-            BinaryOperatorTag.LogicalOr => "||",
-            BinaryOperatorTag.LogicalXor => "^",
-            BinaryOperatorTag.GreaterThan => ">",
-            BinaryOperatorTag.GreaterOrEqual => ">=",
-            BinaryOperatorTag.LessThan => "<",
-            BinaryOperatorTag.LessOrEqual => "<=",
-            BinaryOperatorTag.Equal => "==",
-            BinaryOperatorTag.NotEqual => "!=",
-            _ => "?"
-        };
     }
 }
