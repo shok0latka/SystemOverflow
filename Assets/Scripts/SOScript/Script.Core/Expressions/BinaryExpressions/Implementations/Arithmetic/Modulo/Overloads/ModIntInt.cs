@@ -3,7 +3,7 @@
 using System;
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Modulo.Overloads
+namespace Script.Core.Expressions.BinaryExpressions.Arithmetic
 {
     public sealed class ModIntInt : ModuloOperator
     {

@@ -3,7 +3,7 @@
 using System;
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Equality
+namespace Script.Core.Expressions.BinaryExpressions.Comparison
 {
     public abstract class EqualityOperator : BinaryOperatorOverload, ITaggedBinaryOperator
     {

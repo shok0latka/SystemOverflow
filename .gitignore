@@ -78,3 +78,6 @@ crashlytics-build.properties
 Assets/Scripts/Scratch/Script.Main/*
 Assets/Scripts/Scratch/Script.Core/bin/*
 Assets/Scripts/Scratch/Script.Core/obj/*
+
+# Local util
+replace_nmsp.ps1

@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Inequality.Overloads
+namespace Script.Core.Expressions.BinaryExpressions.Comparison
 {
     public sealed class NotEqualNumeric : NotEqualOperator, ISelfRegistrableOverload
     {

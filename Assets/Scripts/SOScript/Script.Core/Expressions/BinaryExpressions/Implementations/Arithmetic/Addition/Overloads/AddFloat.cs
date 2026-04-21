@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Addition.Overloads
+namespace Script.Core.Expressions.BinaryExpressions.Arithmetic
 {
     public sealed class AddFloat : AdditionOperator, ISelfRegistrableOverload
     {

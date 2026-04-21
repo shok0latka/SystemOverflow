@@ -1,19 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
 using Script.Core.Expressions;
 using Script.Core.Expressions.BinaryExpressions;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Addition;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Division;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Modulo;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Multiplication;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Equality;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.LessOrEqual;
+using Script.Core.Expressions.BinaryExpressions.Arithmetic;
+using Script.Core.Expressions.BinaryExpressions.Comparison;
 using Script.Core.Expressions.LiteralExpressions;
 using Script.Core.Expressions.LiteralExpressions.Implementations;
 using Script.Core.Statements;
-using Script.Core.Variables;
 using Script.Core.Variables.Implementations;
-using Script.Core.Statements.ControlFlow;
 
 using UnityEngine;
 
@@ -122,3 +114,4 @@ public class Test : MonoBehaviour
         program.Execute();
     }
 }
+

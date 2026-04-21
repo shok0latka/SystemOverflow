@@ -1,16 +1,7 @@
 using System;
 using Script.Core.Expressions.BinaryExpressions;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Addition;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Division;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Modulo;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Multiplication;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Subtraction;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Equality;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.GreaterOrEqual;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.GreaterThan;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Inequality;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.LessOrEqual;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.LessThan;
+using Script.Core.Expressions.BinaryExpressions.Arithmetic;
+using Script.Core.Expressions.BinaryExpressions.Comparison;
 using UnityEngine;
 
 public class OverloadSystem: ScriptableObject

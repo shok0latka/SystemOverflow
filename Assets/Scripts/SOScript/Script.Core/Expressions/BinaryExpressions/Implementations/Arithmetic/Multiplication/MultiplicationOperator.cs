@@ -2,7 +2,7 @@
 
 using System;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Multiplication
+namespace Script.Core.Expressions.BinaryExpressions.Arithmetic
 {
     public abstract class MultiplicationOperator : BinaryOperatorOverload, ITaggedBinaryOperator
     {

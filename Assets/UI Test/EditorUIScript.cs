@@ -1,17 +1,11 @@
 using UnityEngine;
 using UnityEngine.UIElements;
-using System.Threading.Tasks;
 
 using Script.Core.Expressions;
 using Script.Core.Expressions.LiteralExpressions.Implementations;
 using Script.Core.Expressions.BinaryExpressions;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Addition;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Multiplication;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Subtraction;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Modulo;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Division;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.LessOrEqual;
-using Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.Equality;
+using Script.Core.Expressions.BinaryExpressions.Arithmetic;
+using Script.Core.Expressions.BinaryExpressions.Comparison;
 
 using Script.Core.Statements;
 using Script.Core.Variables.Implementations;

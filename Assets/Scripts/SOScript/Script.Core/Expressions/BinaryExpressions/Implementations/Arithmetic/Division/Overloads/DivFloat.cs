@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Arithmetic.Division.Overloads
+namespace Script.Core.Expressions.BinaryExpressions.Arithmetic
 {
     public sealed class DivFloat : DivisionOperator, ISelfRegistrableOverload
     {

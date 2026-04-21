@@ -3,7 +3,7 @@
 using System;
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.LessOrEqual
+namespace Script.Core.Expressions.BinaryExpressions.Comparison
 {
     public abstract class LessOrEqualOperator : BinaryOperatorOverload, ITaggedBinaryOperator
     {

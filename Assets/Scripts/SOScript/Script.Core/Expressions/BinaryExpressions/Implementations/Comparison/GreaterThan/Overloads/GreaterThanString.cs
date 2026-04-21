@@ -3,7 +3,7 @@
 using System;
 using Script.Core.Types;
 
-namespace Script.Core.Expressions.BinaryExpressions.Implementations.Comparison.GreaterThan.Overloads
+namespace Script.Core.Expressions.BinaryExpressions.Comparison
 {
     public sealed class GreaterThanString : GreaterThanOperator
     {
