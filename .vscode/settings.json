@@ -58,6 +58,7 @@
     },
     "dotnet.defaultSolution": "SystemOverflow.sln",
     "cSpell.words": [
+        "Mathf",
         "UXML"
     ]
 }

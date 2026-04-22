@@ -16,6 +16,13 @@ public class ScriptEditorUI : MonoBehaviour
     [SerializeField] StyleSheet style;
 
     Label resultLabel;
+    Vector3 startMouse;
+    float startLeft;
+    float startTop;
+
+    float minZoom;
+    float zoom = 1f;
+    float maxZoom = 2f;
 
     void Start()
     {
@@ -24,24 +31,112 @@ public class ScriptEditorUI : MonoBehaviour
         if (style != null)
             root.styleSheets.Add(style);
 
-        var elements = root.Q<ScrollView>("Elements");
-        var editorScroll = root.Q<ScrollView>("Editor");
+        var elements = root.Q("Elements");
+        var editor = root.Q("Editor");
 
-        CreateToolbar(root);
 
-        var graph = new GraphRoot();
-        editorScroll.contentViewport.Add(graph);
+        var field = editor.Q("Field");
 
-        BuildTestGraph(graph);
-
-        editorScroll.contentViewport.RegisterCallback<PointerDownEvent>(evt =>
+        field.RegisterCallback<PointerDownEvent>(evt =>
         {
-            if (evt.target == editorScroll.contentViewport)
+            startMouse = evt.position;
+
+            startLeft = field.resolvedStyle.left;
+            startTop  = field.resolvedStyle.top;
+        });
+
+        field.RegisterCallback<PointerMoveEvent>(evt =>
+        {
+            if (evt.pressedButtons == 1)
             {
-                ExpressionGraphController.Instance.ClickOnEmptySpace(evt.localPosition);
-                evt.StopPropagation();
+                Vector2 delta = evt.position - startMouse;
+
+                float newLeft = startLeft + delta.x;
+                float newTop  = startTop + delta.y;
+
+                field.style.left = newLeft;
+                field.style.top  = newTop;
             }
         });
+
+        field.RegisterCallback<WheelEvent>(evt =>
+        {
+            float zoomDelta = -evt.delta.y;
+            float newZoom = Mathf.Clamp(zoom + zoomDelta, minZoom, maxZoom);
+
+            Debug.Log($"New zoom: {newZoom}");
+
+            if (Mathf.Approximately(newZoom, zoom))
+                return;
+
+            Vector2 mousePos = evt.localMousePosition;
+
+            float oldZoom = zoom;
+            zoom = newZoom;
+
+            float left = field.resolvedStyle.left;
+            float top  = field.resolvedStyle.top;
+
+            float scaleFactor = zoom / oldZoom;
+
+            float newLeft = mousePos.x - (mousePos.x - left) * scaleFactor;
+            float newTop  = mousePos.y - (mousePos.y - top) * scaleFactor;
+
+            field.style.scale = new Scale(new Vector3(zoom, zoom, 1));
+
+            field.style.left = newLeft;
+            field.style.top  = newTop;
+
+            evt.StopPropagation();
+        });
+        
+        field.RegisterCallback<GeometryChangedEvent>(evt =>
+        {
+            Debug.Log($"Geometry Changed");
+
+            minZoom = Mathf.Max(
+                editor.layout.width  / field.layout.width,
+                editor.layout.height / field.layout.height
+            );
+
+            var fieldRect = field.layout;
+            var editorRect = editor.layout;
+
+            float fieldWidth = fieldRect.width * zoom;
+            float fieldHeight = fieldRect.height * zoom;
+            float newTop = field.resolvedStyle.top;
+            float newLeft = field.resolvedStyle.left;
+
+            float editorWidth = editorRect.width;
+            float editorHeight = editorRect.height;
+
+            float minX = editorWidth - fieldWidth;
+            float maxX = 0;
+
+            float minY = editorHeight - fieldHeight;
+            float maxY = 0;
+
+            newLeft = Mathf.Clamp(newLeft, minX, maxX);
+            newTop  = Mathf.Clamp(newTop,  minY, maxY);
+
+            field.style.top = newTop;
+            field.style.left = newLeft;
+        });
+        // CreateToolbar(root);
+
+        // var graph = new GraphRoot();
+        // editor.contentViewport.Add(graph);
+
+        // BuildTestGraph(graph);
+
+        // editor.contentViewport.RegisterCallback<PointerDownEvent>(evt =>
+        // {
+        //     if (evt.target == editor.contentViewport)
+        //     {
+        //         ExpressionGraphController.Instance.ClickOnEmptySpace(evt.localPosition);
+        //         evt.StopPropagation();
+        //     }
+        // });
     }
 
     void CreateToolbar(VisualElement root)
