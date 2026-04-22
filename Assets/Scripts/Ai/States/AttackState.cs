@@ -12,11 +12,6 @@ public class AttackState : EnemyStateBase
 
     public override void TickUpdate(float deltaTime)
     {
-        if (Config == null)
-        {
-            return;
-        }
-
         if (Context.DistanceToPlayer > Config.attackRadius)
         {
             if (Context.TimeSinceSeenPlayer >= Config.loseSightTime)

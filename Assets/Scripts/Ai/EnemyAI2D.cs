@@ -30,6 +30,7 @@ public class EnemyAI2D : MonoBehaviour
     private EnemyContext _context;
     private EnemyHackController _hackController;
     private EnemyHackProgressIndicator _hackProgressIndicator;
+    private EnemyHackCooldownIndicator _hackCooldownIndicator;
     private EnemyStatusIndicator _statusIndicator;
     private EnemyVisionOutline _visionOutline;
     private EnemyStateMachine _stateMachine;
@@ -43,6 +44,17 @@ public class EnemyAI2D : MonoBehaviour
     public string SaveId => persistentId;
     public EnemyState CurrentState => _stateMachine?.CurrentState ?? currentState;
     public bool IsHackActive => CurrentState == EnemyState.Hacked && (_context?.HackedTimer ?? 0f) > 0f;
+    public float HackTimeRemaining => Mathf.Max(0f, _context?.HackedTimer ?? 0f);
+    public float HackDuration
+    {
+        get
+        {
+            float activeHackDuration = _context?.HackedDuration ?? 0f;
+            return CurrentState == EnemyState.Hacked && activeHackDuration > 0f
+                ? activeHackDuration
+                : enemyConfig.hackDuration;
+        }
+    }
     public bool CanBeHacked => CurrentState switch
     {
         EnemyState.Patrol => true,
@@ -67,6 +79,7 @@ public class EnemyAI2D : MonoBehaviour
 
         ConfigureHackController(allowCreate: true);
         ConfigureHackProgressIndicator(allowCreate: true);
+        ConfigureHackCooldownIndicator(allowCreate: true);
         ConfigureStatusIndicator(allowCreate: true);
         ConfigureVisionOutline(allowCreate: true);
         InitializeRuntime();
@@ -93,7 +106,9 @@ public class EnemyAI2D : MonoBehaviour
 
     private void LateUpdate()
     {
+        RefreshHackCooldownIndicator();
         _hackProgressIndicator?.RefreshPresentation();
+        _hackCooldownIndicator?.RefreshPresentation();
         _statusIndicator?.RefreshPresentation();
         RefreshVisionOutline(allowCreate: true);
     }
@@ -107,9 +122,15 @@ public class EnemyAI2D : MonoBehaviour
             return;
         }
 
+        if (!ValidateDependencies())
+        {
+            return;
+        }
+
         _bindingsDirty = true;
         ConfigureHackController(allowCreate: false);
         ConfigureHackProgressIndicator(allowCreate: false);
+        ConfigureHackCooldownIndicator(allowCreate: false);
         ConfigureStatusIndicator(allowCreate: false);
         ConfigureVisionOutline(allowCreate: false);
         ApplyContextBindings(force: false);
@@ -142,6 +163,9 @@ public class EnemyAI2D : MonoBehaviour
             attackTimer = _context?.AttackCooldownTimer ?? 0f,
             searchTimer = _context?.ReturnTimer ?? 0f,
             hackedTimer = _context?.HackedTimer ?? 0f,
+            hackDuration = state == EnemyState.Hacked && (_context?.HackedDuration ?? 0f) > 0f
+                ? _context.HackedDuration
+                : enemyConfig.hackDuration,
             lastKnownX = lastKnown.x,
             lastKnownY = lastKnown.y
         };
@@ -172,12 +196,21 @@ public class EnemyAI2D : MonoBehaviour
         _context.AttackCooldownTimer = Mathf.Max(0f, data.attackTimer);
         _context.ReturnTimer = Mathf.Max(0f, data.searchTimer);
         _context.HackedTimer = Mathf.Max(0f, data.hackedTimer);
+        _context.HackedDuration = data.hackDuration > 0f
+            ? data.hackDuration
+            : enemyConfig.hackDuration;
         _context.LastKnownPlayerPosition = new Vector2(data.lastKnownX, data.lastKnownY);
 
         EnemyState restoredState = ParseState(data.state);
         if (restoredState == EnemyState.Hacked && _context.HackedTimer <= 0f)
         {
-            _context.HackedTimer = 0.2f;
+            restoredState = EnemyState.Patrol;
+        }
+
+        if (restoredState != EnemyState.Hacked)
+        {
+            _context.HackedTimer = 0f;
+            _context.HackedDuration = 0f;
         }
 
         _stateMachine.TransitionTo(restoredState);
@@ -254,11 +287,7 @@ public class EnemyAI2D : MonoBehaviour
             return;
         }
 
-        if (enemyConfig != null)
-        {
-            _context.SetConfig(enemyConfig);
-        }
-
+        _context.SetConfig(enemyConfig);
         _context.SetPatrolPoints(patrolPoints);
         _context.ObstacleMask = obstacleMask;
         _context.SetHackController(_hackController);
@@ -285,6 +314,13 @@ public class EnemyAI2D : MonoBehaviour
     {
         currentState = toState;
         _hackProgressIndicator?.HideProgress();
+        _hackCooldownIndicator?.HideCooldown();
+
+        if (_context != null && toState != EnemyState.Hacked)
+        {
+            _context.HackedDuration = 0f;
+        }
+
         _statusIndicator?.ApplyState(currentState);
     }
 
@@ -333,6 +369,17 @@ public class EnemyAI2D : MonoBehaviour
         _hackProgressIndicator.Configure(statusOffset + new Vector3(0f, 0.35f, 0f), allowCreate);
     }
 
+    private void ConfigureHackCooldownIndicator(bool allowCreate)
+    {
+        _hackCooldownIndicator = EnsureHackCooldownIndicatorComponent(allowCreate);
+        if (_hackCooldownIndicator == null)
+        {
+            return;
+        }
+
+        _hackCooldownIndicator.Configure(statusOffset + new Vector3(0f, 0.35f, 0f), allowCreate);
+    }
+
     private void ConfigureVisionOutline(bool allowCreate)
     {
         _visionOutline = EnsureVisionOutlineComponent(allowCreate);
@@ -378,6 +425,27 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         return _hackProgressIndicator;
+    }
+
+    private EnemyHackCooldownIndicator EnsureHackCooldownIndicatorComponent(bool allowCreate)
+    {
+        if (_hackCooldownIndicator != null)
+        {
+            return _hackCooldownIndicator;
+        }
+
+        _hackCooldownIndicator = GetComponent<EnemyHackCooldownIndicator>();
+        if (_hackCooldownIndicator == null)
+        {
+            if (!allowCreate)
+            {
+                return null;
+            }
+
+            _hackCooldownIndicator = gameObject.AddComponent<EnemyHackCooldownIndicator>();
+        }
+
+        return _hackCooldownIndicator;
     }
 
     private EnemyVisionOutline EnsureVisionOutlineComponent(bool allowCreate)
@@ -466,37 +534,65 @@ public class EnemyAI2D : MonoBehaviour
         _hackProgressIndicator?.HideProgress();
     }
 
+    public void ShowHackCooldown(float normalizedRemaining)
+    {
+        if (CurrentState != EnemyState.Hacked)
+        {
+            HideHackCooldown();
+            return;
+        }
+
+        if (_hackCooldownIndicator == null)
+        {
+            ConfigureHackCooldownIndicator(allowCreate: true);
+        }
+
+        _hackCooldownIndicator?.ShowCooldown(normalizedRemaining);
+    }
+
+    public void HideHackCooldown()
+    {
+        _hackCooldownIndicator?.HideCooldown();
+    }
+
     private void RefreshVisionOutline(bool allowCreate)
     {
         _visionOutline = EnsureVisionOutlineComponent(allowCreate);
-        if (_visionOutline == null)
+        if (_visionOutline == null || _context == null)
         {
             return;
         }
 
-        Vector3 origin = _context != null ? (Vector3)_context.Position : transform.position;
-        Vector2 viewDirection = _context != null ? _context.ViewDirection : Vector2.right;
-        float radius = enemyConfig != null ? Mathf.Max(0f, enemyConfig.visionRadius) : 0f;
-        float closeVisionRadius = _context != null
-            ? _context.CloseVisionRadius
-            : enemyConfig != null
-                ? Mathf.Max(1f, enemyConfig.attackRadius)
-                : 1f;
-        float coneAngleDegrees = _context != null
-            ? _context.ViewConeAngleDegrees
-            : enemyConfig != null
-                ? Mathf.Clamp(enemyConfig.visionConeAngleDegrees, 1f, 360f)
-                : 90f;
-        bool shouldShow = _context != null && currentState != EnemyState.Hacked;
+        Vector3 origin = _context.Position;
+        Vector2 viewDirection = _context.ViewDirection;
+        bool shouldShow = currentState != EnemyState.Hacked;
 
         _visionOutline.RefreshOutline(
             origin,
             viewDirection,
-            radius,
-            closeVisionRadius,
-            coneAngleDegrees,
+            enemyConfig.visionRadius,
+            _context.CloseVisionRadius,
+            _context.ViewConeAngleDegrees,
             shouldShow,
             allowCreate);
+    }
+
+    private void RefreshHackCooldownIndicator()
+    {
+        if (CurrentState != EnemyState.Hacked || HackTimeRemaining <= 0f)
+        {
+            HideHackCooldown();
+            return;
+        }
+
+        float hackDuration = HackDuration;
+        if (hackDuration <= 0f)
+        {
+            HideHackCooldown();
+            return;
+        }
+
+        ShowHackCooldown(Mathf.Clamp01(HackTimeRemaining / hackDuration));
     }
 
     private void UpdateViewDirectionForCurrentState(EnemyState state)
@@ -576,7 +672,6 @@ public class EnemyAI2D : MonoBehaviour
 
         return EnemyState.Patrol;
     }
-
     private void EnsurePersistentId(bool ensureUniqueInScene)
     {
         if (string.IsNullOrWhiteSpace(persistentId))

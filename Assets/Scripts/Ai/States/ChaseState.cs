@@ -19,11 +19,6 @@ public class ChaseState : EnemyStateBase
 
     public override void TickUpdate(float deltaTime)
     {
-        if (Config == null)
-        {
-            return;
-        }
-
         if (Context.DistanceToPlayer <= Config.attackRadius && Context.CanSeePlayer)
         {
             StateMachine.TransitionTo(EnemyState.Attack);
@@ -38,11 +33,6 @@ public class ChaseState : EnemyStateBase
 
     public override void TickFixed(float fixedDeltaTime)
     {
-        if (Config == null)
-        {
-            return;
-        }
-
         Context.MoveTowards(Context.LastKnownPlayerPosition, Config.chaseSpeed, fixedDeltaTime);
     }
 }

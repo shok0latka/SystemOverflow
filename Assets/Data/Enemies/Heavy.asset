@@ -25,5 +25,5 @@ MonoBehaviour:
   attackRadius: 1.4
   attackCooldown: 0.6
   attackDamage: 2
-  baseHackDuration: 6
+  hackDuration: 40
   hackResistance: 0.65

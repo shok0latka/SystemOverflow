@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class EnemyContext
 {
-    private const float DefaultViewConeAngleDegrees = 90f;
     private const float MinimumInputMagnitude = 0.0001f;
 
     private readonly EnemyAI2D _owner;
@@ -23,8 +22,8 @@ public class EnemyContext
         Player = player;
         ObstacleMask = obstacleMask;
         Suspicion = new SuspicionMeter(
-            config != null ? config.suspicionGainPerSecond : 0.9f,
-            config != null ? config.suspicionDecayPerSecond : 0.4f
+            config.suspicionGainPerSecond,
+            config.suspicionDecayPerSecond
         );
     }
 
@@ -43,24 +42,18 @@ public class EnemyContext
     public Vector2 LastKnownPlayerPosition { get; set; }
     public float TimeSinceSeenPlayer { get; set; }
     public Vector2 ViewDirection { get; private set; } = Vector2.right;
-    public float CloseVisionRadius => Config != null ? Mathf.Max(1f, Config.attackRadius) : 1f;
-    public float ViewConeAngleDegrees => Config != null
-        ? Mathf.Clamp(Config.visionConeAngleDegrees, 1f, 360f)
-        : DefaultViewConeAngleDegrees;
+    public float CloseVisionRadius => Config.attackRadius;
+    public float ViewConeAngleDegrees => Config.visionConeAngleDegrees;
     public float HalfViewConeAngleDegrees => ViewConeAngleDegrees * 0.5f;
 
     public int PatrolIndex { get; set; }
     public float AttackCooldownTimer { get; set; }
     public float ReturnTimer { get; set; }
     public float HackedTimer { get; set; }
+    public float HackedDuration { get; set; }
 
     public void SetConfig(EnemyConfig config)
     {
-        if (config == null)
-        {
-            return;
-        }
-
         Config = config;
         Suspicion.Configure(config.suspicionGainPerSecond, config.suspicionDecayPerSecond);
     }
@@ -317,7 +310,7 @@ public class EnemyContext
 
     public bool TryAttackPlayer()
     {
-        if (Config == null || Player == null || PlayerHealth == null)
+        if (Player == null || PlayerHealth == null)
         {
             return false;
         }
@@ -327,26 +320,22 @@ public class EnemyContext
             return false;
         }
 
-        if (DistanceToPlayer > Mathf.Max(0.1f, Config.attackRadius))
+        if (DistanceToPlayer > Config.attackRadius)
         {
             return false;
         }
 
-        AttackCooldownTimer = Mathf.Max(0.05f, Config.attackCooldown);
-        PlayerHealth.TakeDamage(Mathf.Max(1, Config.attackDamage));
+        AttackCooldownTimer = Config.attackCooldown;
+        PlayerHealth.TakeDamage(Config.attackDamage);
         return true;
     }
 
     public void StartHack(float baseDuration)
     {
-        float safeDuration = baseDuration > 0f
+        HackedDuration = baseDuration > 0f
             ? baseDuration
-            : Config != null
-                ? Config.baseHackDuration
-                : 6f;
-
-        float resistance = Config != null ? Mathf.Clamp01(Config.hackResistance) : 0f;
-        HackedTimer = Mathf.Max(0.2f, safeDuration * (1f - resistance));
+            : Config.hackDuration;
+        HackedTimer = HackedDuration;
         AttackCooldownTimer = 0f;
         ReturnTimer = 0f;
         TimeSinceSeenPlayer = 0f;
@@ -392,7 +381,7 @@ public class EnemyContext
 
     private bool HasLineOfSightToPlayer()
     {
-        if (Player == null || Rigidbody == null || Config == null)
+        if (Player == null || Rigidbody == null)
         {
             return false;
         }
@@ -400,7 +389,7 @@ public class EnemyContext
         Vector2 origin = Rigidbody.position;
         Vector2 toPlayer = (Vector2)Player.position - origin;
         float distanceToPlayer = toPlayer.magnitude;
-        float visionRadius = Mathf.Max(0.1f, Config.visionRadius);
+        float visionRadius = Config.visionRadius;
         float closeVisionRadius = CloseVisionRadius;
         if (distanceToPlayer > Mathf.Max(visionRadius, closeVisionRadius))
         {

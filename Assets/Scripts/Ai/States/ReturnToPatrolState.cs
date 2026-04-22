@@ -16,11 +16,6 @@ public class ReturnToPatrolState : EnemyStateBase
 
     public override void TickUpdate(float deltaTime)
     {
-        if (Config == null)
-        {
-            return;
-        }
-
         Context.ReturnTimer += deltaTime;
 
         if (Context.CanSeePlayer)
@@ -39,11 +34,6 @@ public class ReturnToPatrolState : EnemyStateBase
 
     public override void TickFixed(float fixedDeltaTime)
     {
-        if (Config == null)
-        {
-            return;
-        }
-
         Context.MoveTowards(Context.LastKnownPlayerPosition, Config.patrolSpeed, fixedDeltaTime);
     }
 }
