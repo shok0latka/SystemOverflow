@@ -13,12 +13,9 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.E))
+        if (_interactor != null)
         {
-            if (_interactor != null)
-            {
-                _interactor.TryInteract();
-            }
+            _interactor.HandleUseInput();
         }
 
         if (_movement == null)

@@ -700,7 +700,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a300f5218e23514e87d1302d6b093ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  interactRadius: 1.2
+  interactRadius: 2.2
   interactLayer:
     serializedVersion: 2
     m_Bits: 0

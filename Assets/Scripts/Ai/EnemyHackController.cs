@@ -20,7 +20,7 @@ public class EnemyHackController : MonoBehaviour
             return false;
         }
 
-        return resolvedOwner.TryBeginHackInternal(baseDuration);
+        return resolvedOwner.TryBeginHack(baseDuration);
     }
 
     public void SetDriveIntent(HackedEnemyDriveIntent intent)

@@ -353,6 +353,17 @@ public class EnemyContext
         Suspicion.Reset();
     }
 
+    public void StopMovement()
+    {
+        if (Rigidbody == null)
+        {
+            return;
+        }
+
+        Rigidbody.velocity = Vector2.zero;
+        Rigidbody.angularVelocity = 0f;
+    }
+
     public bool IsNear(Vector2 target, float threshold)
     {
         if (Rigidbody == null)
@@ -374,6 +385,7 @@ public class EnemyContext
             {
                 Rigidbody.position = value;
                 Rigidbody.velocity = Vector2.zero;
+                Rigidbody.angularVelocity = 0f;
             }
         }
     }
