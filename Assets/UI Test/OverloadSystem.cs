@@ -4,6 +4,7 @@ using Script.Core.Expressions.BinaryExpressions.Arithmetic;
 using Script.Core.Expressions.BinaryExpressions.Comparison;
 using UnityEngine;
 
+[CreateAssetMenu]
 public class OverloadSystem: ScriptableObject
 {
     #region  Arithmetic

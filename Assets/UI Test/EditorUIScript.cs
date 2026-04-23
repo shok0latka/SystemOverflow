@@ -69,7 +69,7 @@ public class ScriptEditorUI : MonoBehaviour
             if (Mathf.Approximately(newZoom, zoom))
                 return;
 
-            Vector2 mousePos = evt.localMousePosition;
+            Vector2 mousePos = editor.WorldToLocal(evt.mousePosition);
 
             float oldZoom = zoom;
             zoom = newZoom;
