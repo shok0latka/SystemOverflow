@@ -10,32 +10,10 @@
         </ui:VisualElement>
         <ui:VisualElement name="Elements" tabindex="1" class="so-elements" style="width: 20%; flex-grow: 0; position: relative; min-width: 250px; max-width: 500px;">
             <ui:ScrollView scroll-deceleration-rate="0,135" elasticity="0,1" vertical-scroller-visibility="AlwaysVisible" mouse-wheel-scroll-size="1000" style="flex-grow: 1; font-size: 24px;">
-                <ui:Foldout text="Expressions" value="true" name="Expressions">
-                    <ui:Foldout text="Binary" name="BinaryExpressions">
-                        <ui:Foldout text="Arithmetics" name="Arithmetics" value="true">
-                            <ui:VisualElement style="flex-grow: 1; height: 100px; margin-right: 20px; margin-bottom: 20px;">
-                                <ui:VisualElement style="flex-grow: 1; background-color: rgba(219, 255, 0, 0.53); align-items: center; justify-content: center;">
-                                    <ui:Label tabindex="-1" text="Test" parse-escape-sequences="true" display-tooltip-when-elided="true" style="-unity-text-align: middle-center;" />
-                                </ui:VisualElement>
-                            </ui:VisualElement>
-                            <ui:VisualElement style="flex-grow: 1; height: 100px; margin-right: 20px; margin-bottom: 20px;">
-                                <ui:VisualElement style="flex-grow: 1; background-color: rgba(255, 145, 0, 0.53); align-items: center; justify-content: center;">
-                                    <ui:Label tabindex="-1" text="Test" parse-escape-sequences="true" display-tooltip-when-elided="true" style="-unity-text-align: middle-center;" />
-                                </ui:VisualElement>
-                            </ui:VisualElement>
-                        </ui:Foldout>
-                        <ui:Foldout text="Comparison" name="Comparison" value="true">
-                            <ui:VisualElement style="flex-grow: 1; height: 100px; margin-right: 20px; margin-bottom: 20px;">
-                                <ui:VisualElement style="flex-grow: 1; background-color: rgba(126, 255, 0, 0.53); align-items: center; justify-content: center;">
-                                    <ui:Label tabindex="-1" text="Test" parse-escape-sequences="true" display-tooltip-when-elided="true" style="-unity-text-align: middle-center;" />
-                                </ui:VisualElement>
-                            </ui:VisualElement>
-                            <ui:VisualElement style="flex-grow: 1; height: 100px; margin-right: 20px; margin-bottom: 20px;">
-                                <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 255, 138, 0.53); align-items: center; justify-content: center;">
-                                    <ui:Label tabindex="-1" text="Test" parse-escape-sequences="true" display-tooltip-when-elided="true" style="-unity-text-align: middle-center;" />
-                                </ui:VisualElement>
-                            </ui:VisualElement>
-                        </ui:Foldout>
+                <ui:Foldout text="Expressions" value="true" name="Expressions" style="margin-right: 20px;">
+                    <ui:Foldout text="Binary" name="BinaryExpressions" value="true">
+                        <ui:Foldout text="Arithmetics" name="Arithmetics" value="true" />
+                        <ui:Foldout text="Comparison" name="Comparison" value="true" />
                     </ui:Foldout>
                     <ui:Foldout text="Literal" name="LiteralExpressions">
                         <ui:VisualElement style="flex-grow: 1; height: 100px; margin-right: 20px; margin-bottom: 20px;">
@@ -50,14 +28,14 @@
                         </ui:VisualElement>
                     </ui:Foldout>
                 </ui:Foldout>
-                <ui:Foldout text="Control Flow Statements" name="ControlFlowStmts">
+                <ui:Foldout text="Control Flow Statements" name="ControlFlowStmts" style="margin-right: 20px;">
                     <ui:VisualElement style="flex-grow: 1; height: 100px; margin-right: 20px; margin-bottom: 20px;">
                         <ui:VisualElement style="flex-grow: 1; background-color: rgba(121, 0, 255, 0.53); align-items: center; justify-content: center;">
                             <ui:Label tabindex="-1" text="Test" parse-escape-sequences="true" display-tooltip-when-elided="true" style="-unity-text-align: middle-center;" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:Foldout>
-                <ui:Foldout text="Variables" name="Variables">
+                <ui:Foldout text="Variables" name="Variables" style="margin-right: 20px;">
                     <ui:VisualElement style="flex-grow: 1; height: 100px; margin-right: 20px; margin-bottom: 20px;">
                         <ui:VisualElement style="flex-grow: 1; background-color: rgba(255, 0, 230, 0.53); align-items: center; justify-content: center;">
                             <ui:Label tabindex="-1" text="Test" parse-escape-sequences="true" display-tooltip-when-elided="true" style="-unity-text-align: middle-center;" />

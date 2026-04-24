@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Script.Core.Expressions.BinaryExpressions;
 
 namespace Script.Core.Utils
@@ -26,6 +27,25 @@ namespace Script.Core.Utils
                 _ => "?"
             };
         }
+    
+        public static List<BinaryOperatorTag> Arithmetics => new()
+        {
+            BinaryOperatorTag.Addition,
+            BinaryOperatorTag.Subtraction,
+            BinaryOperatorTag.Multiplication,
+            BinaryOperatorTag.Division,
+            BinaryOperatorTag.Reminder
+        };
+
+        public static List<BinaryOperatorTag> Comparison => new()
+        {
+            BinaryOperatorTag.Equal,
+            BinaryOperatorTag.GreaterOrEqual,
+            BinaryOperatorTag.GreaterThan,
+            BinaryOperatorTag.NotEqual,
+            BinaryOperatorTag.LessOrEqual,
+            BinaryOperatorTag.LessThan
+        };
     }
 }
 

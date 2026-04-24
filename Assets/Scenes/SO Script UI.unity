@@ -390,6 +390,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   document: {fileID: 1390458488}
   style: {fileID: 7433441132597879392, guid: 8c7348551ba62f4409ddbb595cb57267, type: 3}
+  system: {fileID: 11400000, guid: 071bc4cf5e5830e41a1d03988919040c, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

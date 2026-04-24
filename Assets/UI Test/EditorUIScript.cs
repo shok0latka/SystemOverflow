@@ -9,11 +9,13 @@ using Script.Core.Expressions.BinaryExpressions.Comparison;
 
 using Script.Core.Statements;
 using Script.Core.Variables.Implementations;
+using Script.Core.Utils;
 
 public class ScriptEditorUI : MonoBehaviour
 {
     [SerializeField] UIDocument document;
     [SerializeField] StyleSheet style;
+    [SerializeField] OverloadSystem system;
 
     Label resultLabel;
     Vector3 startMouse;
@@ -23,6 +25,7 @@ public class ScriptEditorUI : MonoBehaviour
     float minZoom;
     float zoom = 1f;
     float maxZoom = 2f;
+    
 
     void Start()
     {
@@ -34,7 +37,14 @@ public class ScriptEditorUI : MonoBehaviour
         var elements = root.Q("Elements");
         var editor = root.Q("Editor");
 
+        BuildEditorField(editor);
+        BuildElements(elements, editor);
 
+        CreateToolbar(root);
+    }
+
+    void BuildEditorField(VisualElement editor)
+    {
         var field = editor.Q("Field");
 
         field.RegisterCallback<PointerDownEvent>(evt =>
@@ -122,21 +132,39 @@ public class ScriptEditorUI : MonoBehaviour
             field.style.top = newTop;
             field.style.left = newLeft;
         });
-        // CreateToolbar(root);
 
-        // var graph = new GraphRoot();
-        // editor.contentViewport.Add(graph);
+        var graph = new GraphRoot();        
+        field.Add(graph);
 
         // BuildTestGraph(graph);
 
-        // editor.contentViewport.RegisterCallback<PointerDownEvent>(evt =>
-        // {
-        //     if (evt.target == editor.contentViewport)
-        //     {
-        //         ExpressionGraphController.Instance.ClickOnEmptySpace(evt.localPosition);
-        //         evt.StopPropagation();
-        //     }
-        // });
+        field.RegisterCallback<PointerDownEvent>(evt =>
+        {
+            if (evt.target == field)
+            {
+                ExpressionGraphController.Instance.ClickOnEmptySpace(evt.localPosition);
+                evt.StopPropagation();
+            }
+        });
+    }
+
+    void BuildElements(VisualElement elements, VisualElement editor)
+    {
+        var arithmetics = elements.Q<Foldout>("Arithmetics");
+
+        foreach (var tag in BinaryTagOperations.Arithmetics)
+        {
+            var block = new ExpressionElementSpawner(system[tag], editor);
+            arithmetics.Add(block);
+        }
+
+        var comparison = elements.Q<Foldout>("Comparison");
+
+        foreach (var tag in BinaryTagOperations.Comparison)
+        {
+            var block = new ExpressionElementSpawner(system[tag], editor);
+            comparison.Add(block);
+        }
     }
 
     void CreateToolbar(VisualElement root)

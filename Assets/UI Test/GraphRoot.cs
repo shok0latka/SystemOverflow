@@ -31,6 +31,17 @@ public class GraphRoot : VisualElement
         Add(block);
     }
 
+    public void AddFreeBlock(ExpressionBlockView block, Vector2 position)
+    {
+        block.RemoveFromHierarchy();
+
+        block.style.position = Position.Absolute;
+        block.style.left = position.x;
+        block.style.top = position.y;
+
+        Add(block);
+    }
+
     public void AddFreeBlock(StatementBlockView block)
     {
         block.RemoveFromHierarchy();
