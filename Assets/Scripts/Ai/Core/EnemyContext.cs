@@ -49,8 +49,6 @@ public class EnemyContext
     public int PatrolIndex { get; set; }
     public float AttackCooldownTimer { get; set; }
     public float ReturnTimer { get; set; }
-    public float HackedTimer { get; set; }
-    public float HackedDuration { get; set; }
 
     public void SetConfig(EnemyConfig config)
     {
@@ -315,6 +313,11 @@ public class EnemyContext
             return false;
         }
 
+        if (!CanSeePlayer)
+        {
+            return false;
+        }
+
         if (AttackCooldownTimer > 0f)
         {
             return false;
@@ -328,18 +331,6 @@ public class EnemyContext
         AttackCooldownTimer = Config.attackCooldown;
         PlayerHealth.TakeDamage(Config.attackDamage);
         return true;
-    }
-
-    public void StartHack(float baseDuration)
-    {
-        HackedDuration = baseDuration > 0f
-            ? baseDuration
-            : Config.hackDuration;
-        HackedTimer = HackedDuration;
-        AttackCooldownTimer = 0f;
-        ReturnTimer = 0f;
-        TimeSinceSeenPlayer = 0f;
-        Suspicion.Reset();
     }
 
     public void StopMovement()

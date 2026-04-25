@@ -9,7 +9,7 @@ public class PlayerInteractor : MonoBehaviour
     [SerializeField] 
     private float hackHoldDuration = 1.5f;
 
-    private EnemyAI2D _hackTargetEnemy;
+    private EnemyHackController _hackTarget;
     private float _hackHoldTimer;
 
     public void HandleUseInput()
@@ -73,10 +73,10 @@ public class PlayerInteractor : MonoBehaviour
 
     private void ContinueUseAttempt()
     {
-        if (_hackTargetEnemy == null)
+        if (_hackTarget == null)
         {
             TryLockHackTarget();
-            if (_hackTargetEnemy == null)
+            if (_hackTarget == null)
             {
                 return;
             }
@@ -93,14 +93,15 @@ public class PlayerInteractor : MonoBehaviour
             ? 1f
             : Mathf.Clamp01(_hackHoldTimer / hackHoldDuration);
 
-        _hackTargetEnemy.ShowHackProgress(normalizedProgress);
+        _hackTarget.SetAttemptProgress(normalizedProgress);
 
         if (_hackHoldTimer < hackHoldDuration)
         {
             return;
         }
 
-        if (_hackTargetEnemy.TryBeginHack(0f))
+        HackBeginResult result = _hackTarget.TryBeginHack(HackRequest.Default);
+        if (result.Succeeded)
         {
             ResetHackAttempt();
             return;
@@ -111,34 +112,34 @@ public class PlayerInteractor : MonoBehaviour
 
     private bool TryLockHackTarget()
     {
-        EnemyAI2D targetEnemy = FindNearestEnemy();
-        if (targetEnemy == null)
+        EnemyHackController target = FindNearestHackable();
+        if (target == null)
         {
             return false;
         }
 
-        _hackTargetEnemy = targetEnemy;
+        _hackTarget = target;
         _hackHoldTimer = 0f;
-        _hackTargetEnemy.ShowHackProgress(0f);
+        _hackTarget.SetAttemptProgress(0f);
         return true;
     }
 
-    private EnemyAI2D FindNearestEnemy()
+    private EnemyHackController FindNearestHackable()
     {
-        EnemyAI2D[] enemies = FindObjectsByType<EnemyAI2D>(FindObjectsSortMode.None);
-        if (enemies == null || enemies.Length == 0)
+        EnemyHackController[] hackables = FindObjectsByType<EnemyHackController>(FindObjectsSortMode.None);
+        if (hackables == null || hackables.Length == 0)
         {
             return null;
         }
 
-        EnemyAI2D nearestEnemy = null;
+        EnemyHackController nearestHackable = null;
         float nearestSqrDistance = float.MaxValue;
         Vector2 playerPosition = transform.position;
         float maxSqrDistance = interactRadius * interactRadius;
 
-        foreach (EnemyAI2D candidate in enemies)
+        foreach (EnemyHackController candidate in hackables)
         {
-            if (candidate == null || !candidate.CanBeHacked)
+            if (candidate == null || !candidate.GetHackStatus().CanBegin)
             {
                 continue;
             }
@@ -149,37 +150,38 @@ public class PlayerInteractor : MonoBehaviour
                 continue;
             }
 
-            nearestEnemy = candidate;
+            nearestHackable = candidate;
             nearestSqrDistance = sqrDistance;
         }
 
-        return nearestEnemy;
+        return nearestHackable;
     }
 
     private bool IsHackTargetStillValid()
     {
-        if (_hackTargetEnemy == null)
+        if (_hackTarget == null)
         {
             return false;
         }
 
-        if (!_hackTargetEnemy.CanBeHacked || _hackTargetEnemy.IsHackActive)
+        HackStatusSnapshot status = _hackTarget.GetHackStatus();
+        if (!status.CanBegin || status.IsActive)
         {
             return false;
         }
 
-        float sqrDistance = ((Vector2)_hackTargetEnemy.transform.position - (Vector2)transform.position).sqrMagnitude;
+        float sqrDistance = ((Vector2)_hackTarget.transform.position - (Vector2)transform.position).sqrMagnitude;
         return sqrDistance <= interactRadius * interactRadius;
     }
 
     private void ResetHackAttempt()
     {
-        if (_hackTargetEnemy != null)
+        if (_hackTarget != null)
         {
-            _hackTargetEnemy.HideHackProgress();
+            _hackTarget.ClearAttemptProgress();
         }
 
-        _hackTargetEnemy = null;
+        _hackTarget = null;
         _hackHoldTimer = 0f;
     }
 }

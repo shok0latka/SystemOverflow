@@ -12,7 +12,7 @@ public class AttackState : EnemyStateBase
 
     public override void TickUpdate(float deltaTime)
     {
-        if (Context.DistanceToPlayer > Config.attackRadius)
+        if (!Context.CanSeePlayer)
         {
             if (Context.TimeSinceSeenPlayer >= Config.loseSightTime)
             {
@@ -25,9 +25,9 @@ public class AttackState : EnemyStateBase
             return;
         }
 
-        if (!Context.CanSeePlayer && Context.TimeSinceSeenPlayer >= Config.loseSightTime)
+        if (Context.DistanceToPlayer > Config.attackRadius)
         {
-            StateMachine.TransitionTo(EnemyState.ReturnToPatrol);
+            StateMachine.TransitionTo(EnemyState.Chase);
         }
     }
 

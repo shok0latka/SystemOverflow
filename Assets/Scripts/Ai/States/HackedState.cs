@@ -15,6 +15,8 @@ public class HackedState : EnemyStateBase
     {
         Context.Suspicion.Reset();
         Context.ResetReturnTimer();
+        Context.AttackCooldownTimer = 0f;
+        Context.TimeSinceSeenPlayer = 0f;
         _frozenPosition = Context.Position;
         Context.Position = _frozenPosition;
         Context.StopMovement();
@@ -24,10 +26,11 @@ public class HackedState : EnemyStateBase
 
     public override void TickUpdate(float deltaTime)
     {
-        Context.HackedTimer -= deltaTime;
-        if (Context.HackedTimer <= 0f)
+        HackStatusSnapshot hackStatus = Context.HackController != null
+            ? Context.HackController.GetHackStatus()
+            : HackStatusSnapshot.Unavailable;
+        if (!hackStatus.IsActive)
         {
-            Context.HackedTimer = 0f;
             StateMachine.TransitionTo(EnemyState.Patrol);
         }
     }
