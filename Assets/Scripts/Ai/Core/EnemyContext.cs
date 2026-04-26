@@ -191,13 +191,37 @@ public class EnemyContext
             PatrolIndex = 0;
         }
 
-        Vector2 target = PatrolPoints[PatrolIndex].position;
+        Transform patrolPoint = GetNextValidPatrolPoint();
+        if (patrolPoint == null)
+        {
+            return;
+        }
+
+        Vector2 target = patrolPoint.position;
         MoveTowards(target, speed, fixedDeltaTime);
 
         if (Vector2.Distance(Rigidbody.position, target) < 0.2f)
         {
             PatrolIndex = (PatrolIndex + 1) % PatrolPoints.Length;
         }
+    }
+
+    private Transform GetNextValidPatrolPoint()
+    {
+        for (int offset = 0; offset < PatrolPoints.Length; offset++)
+        {
+            int candidateIndex = (PatrolIndex + offset) % PatrolPoints.Length;
+            Transform candidate = PatrolPoints[candidateIndex];
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            PatrolIndex = candidateIndex;
+            return candidate;
+        }
+
+        return null;
     }
 
     public void MoveWithRelativeInput(float moveRight, float moveForward, float speed, float fixedDeltaTime)

@@ -47,6 +47,7 @@ public class EnemyAI2D : MonoBehaviour
     private void Awake()
     {
         EnsurePersistentId(ensureUniqueInScene: false);
+        ConfigureTopDownRigidbody();
 
         if (!ValidateDependencies())
         {
@@ -88,7 +89,7 @@ public class EnemyAI2D : MonoBehaviour
     private void OnValidate()
     {
         EnsurePersistentId(ensureUniqueInScene: !Application.isPlaying);
-        ResolveRigidbodyReference();
+        ConfigureTopDownRigidbody();
 
         if (!Application.isPlaying)
         {
@@ -110,7 +111,7 @@ public class EnemyAI2D : MonoBehaviour
 
     private void Reset()
     {
-        ResolveRigidbodyReference();
+        ConfigureTopDownRigidbody();
     }
 
     private void OnDestroy()
@@ -208,7 +209,7 @@ public class EnemyAI2D : MonoBehaviour
 
     private bool ValidateDependencies()
     {
-        ResolveRigidbodyReference();
+        ConfigureTopDownRigidbody();
 
         if (rb == null)
         {
@@ -239,6 +240,18 @@ public class EnemyAI2D : MonoBehaviour
         {
             rb = GetComponent<Rigidbody2D>();
         }
+    }
+
+    private void ConfigureTopDownRigidbody()
+    {
+        ResolveRigidbodyReference();
+        if (rb == null)
+        {
+            return;
+        }
+
+        rb.gravityScale = 0f;
+        rb.constraints |= RigidbodyConstraints2D.FreezeRotation;
     }
 
     private void InitializeRuntime()

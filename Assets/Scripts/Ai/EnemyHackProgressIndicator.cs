@@ -15,7 +15,7 @@ public class EnemyHackProgressIndicator : MonoBehaviour
     {
         progressOffset = offset;
         EnsureProgressText(allowCreate);
-        HideProgress();
+        ClearProgressText();
     }
 
     public void ShowProgress(float normalizedProgress)
@@ -38,7 +38,7 @@ public class EnemyHackProgressIndicator : MonoBehaviour
             return;
         }
 
-        progressText.text = string.Empty;
+        ClearProgressText();
         progressText.gameObject.SetActive(false);
     }
 
@@ -94,13 +94,20 @@ public class EnemyHackProgressIndicator : MonoBehaviour
         progressText.anchor = TextAnchor.MiddleCenter;
         progressText.alignment = TextAlignment.Center;
         progressText.color = new Color(0.3f, 1f, 1f);
+        ClearProgressText();
 
         MeshRenderer meshRenderer = progressText.GetComponent<MeshRenderer>();
         if (meshRenderer != null)
         {
             meshRenderer.sortingOrder = 2001;
         }
+    }
 
-        indicator.SetActive(false);
+    private void ClearProgressText()
+    {
+        if (progressText != null)
+        {
+            progressText.text = string.Empty;
+        }
     }
 }

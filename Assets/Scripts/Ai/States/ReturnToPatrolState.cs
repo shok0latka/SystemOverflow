@@ -28,6 +28,9 @@ public class ReturnToPatrolState : EnemyStateBase
         bool timeoutReached = Context.ReturnTimer >= Config.searchDuration;
         if (reachedLastKnown || timeoutReached)
         {
+            Context.Suspicion.Reset();
+            Context.TimeSinceSeenPlayer = 0f;
+            Context.ResetReturnTimer();
             StateMachine.TransitionTo(EnemyState.Patrol);
         }
     }

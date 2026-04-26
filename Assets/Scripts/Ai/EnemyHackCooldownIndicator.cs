@@ -21,7 +21,7 @@ public class EnemyHackCooldownIndicator : MonoBehaviour
     {
         cooldownOffset = offset;
         EnsureCooldownText(allowCreate);
-        HideCooldown();
+        ClearCooldownText();
     }
 
     public void ShowCooldown(float normalizedRemaining)
@@ -51,7 +51,7 @@ public class EnemyHackCooldownIndicator : MonoBehaviour
             return;
         }
 
-        cooldownText.text = string.Empty;
+        ClearCooldownText();
         cooldownText.gameObject.SetActive(false);
     }
 
@@ -122,6 +122,7 @@ public class EnemyHackCooldownIndicator : MonoBehaviour
         cooldownText.anchor = TextAnchor.MiddleCenter;
         cooldownText.alignment = TextAlignment.Center;
         cooldownText.color = cooldownColor;
+        ClearCooldownText();
 
         MeshRenderer meshRenderer = cooldownText.GetComponent<MeshRenderer>();
         if (meshRenderer != null)
@@ -153,5 +154,13 @@ public class EnemyHackCooldownIndicator : MonoBehaviour
         }
 
         return EmptyCircle;
+    }
+
+    private void ClearCooldownText()
+    {
+        if (cooldownText != null)
+        {
+            cooldownText.text = string.Empty;
+        }
     }
 }
