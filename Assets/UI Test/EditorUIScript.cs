@@ -10,6 +10,8 @@ using Script.Core.Expressions.BinaryExpressions.Comparison;
 using Script.Core.Statements;
 using Script.Core.Variables.Implementations;
 using Script.Core.Utils;
+using System;
+using System.Linq;
 
 public class ScriptEditorUI : MonoBehaviour
 {
@@ -165,6 +167,14 @@ public class ScriptEditorUI : MonoBehaviour
         {
             var block = new ExpressionElementSpawner(system[tag], editor);
             comparison.Add(block);
+        }
+
+        var literal = elements.Q<Foldout>("LiteralExpressions");
+
+        foreach (var type in Enum.GetValues(typeof(UserInputExpressionType)).Cast<UserInputExpressionType>())
+        {
+            var block = new ExpressionElementSpawner(type, editor);
+            literal.Add(block);
         }
     }
 

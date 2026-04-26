@@ -11,18 +11,7 @@
                         <ui:Foldout text="Arithmetics" name="Arithmetics" value="true" />
                         <ui:Foldout text="Comparison" name="Comparison" value="true" />
                     </ui:Foldout>
-                    <ui:Foldout text="Literal" name="LiteralExpressions">
-                        <ui:VisualElement style="flex-grow: 1; height: 100px; margin-right: 20px; margin-bottom: 20px;">
-                            <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 255, 245, 0.53); align-items: center; justify-content: center;">
-                                <ui:Label tabindex="-1" text="Test" parse-escape-sequences="true" display-tooltip-when-elided="true" style="-unity-text-align: middle-center;" />
-                            </ui:VisualElement>
-                        </ui:VisualElement>
-                        <ui:VisualElement style="flex-grow: 1; height: 100px; margin-right: 20px; margin-bottom: 20px;">
-                            <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 134, 255, 0.53); align-items: center; justify-content: center;">
-                                <ui:Label tabindex="-1" text="Test" parse-escape-sequences="true" display-tooltip-when-elided="true" style="-unity-text-align: middle-center;" />
-                            </ui:VisualElement>
-                        </ui:VisualElement>
-                    </ui:Foldout>
+                    <ui:Foldout text="Literal" name="LiteralExpressions" />
                 </ui:Foldout>
                 <ui:Foldout text="Control Flow Statements" name="ControlFlowStmts" style="margin-right: 20px;">
                     <ui:VisualElement style="flex-grow: 1; height: 100px; margin-right: 20px; margin-bottom: 20px;">

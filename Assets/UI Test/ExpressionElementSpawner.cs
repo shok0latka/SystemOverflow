@@ -2,15 +2,20 @@ using Script.Core.Expressions.BinaryExpressions;
 using UnityEngine.UIElements;
 using UnityEngine;
 using Script.Core.Utils;
+using System;
+using Script.Core.Expressions.LiteralExpressions;
+using Script.Core.Expressions.LiteralExpressions.Implementations;
+
+public enum UserInputExpressionType
+{
+    Numeral,
+    Literal
+}
 
 public class ExpressionElementSpawner: VisualElement
 {
-    private readonly BinaryOperatorOverloadSystem _system;
-
     public ExpressionElementSpawner(BinaryOperatorOverloadSystem system, VisualElement editor)
     {
-        _system = system;
-
         var field = editor.Q("Field");
         var graph = field.Q<GraphRoot>();
 
@@ -19,7 +24,7 @@ public class ExpressionElementSpawner: VisualElement
         RegisterCallback<ClickEvent>(evt =>
         {
             evt.StopPropagation();
-            var expr = new ExpressionBlockView(new BinaryExpression(_system));
+            var expr = new ExpressionBlockView(new BinaryExpression(system));
 
             var editorCenter = new Vector2(
                 editor.layout.width * 0.5f,
@@ -28,13 +33,13 @@ public class ExpressionElementSpawner: VisualElement
 
             var centerInField = editor.ChangeCoordinatesTo(field, editorCenter);
 
-            Debug.Log($"Spawn block: {_system.Tag}, to position: {centerInField}");
+            Debug.Log($"Spawn block: {system.Tag}, to position: {centerInField}");
             graph.AddFreeBlock(expr, centerInField);
         });
 
         var slot1 = new VisualElement();
         var slot2 = new VisualElement();
-        var op = new Label(BinaryTagOperations.GetOperatorText(_system.Tag));
+        var op = new Label(BinaryTagOperations.GetOperatorText(system.Tag));
 
 
         slot1.AddToClassList("expr-slot");
@@ -45,4 +50,50 @@ public class ExpressionElementSpawner: VisualElement
         Add(op);
         Add(slot2);
     }  
+
+    public ExpressionElementSpawner(UserInputExpressionType type, VisualElement editor)
+    {
+        var field = editor.Q("Field");
+        var graph = field.Q<GraphRoot>();
+        
+        string prefix = type switch
+        {
+            UserInputExpressionType.Numeral => "num:",
+            UserInputExpressionType.Literal => "str:",
+            _ => throw new NotImplementedException()
+        };
+
+        RegisterCallback<ClickEvent>(evt =>
+        {
+            evt.StopPropagation();
+
+            var expr = type switch 
+            {
+                UserInputExpressionType.Numeral => new ExpressionBlockView(new NumeralExpression()),
+                UserInputExpressionType.Literal => new ExpressionBlockView(new LiteralExpression()),
+                _ => throw new NotImplementedException()
+            };
+
+            var editorCenter = new Vector2(
+                editor.layout.width * 0.5f,
+                editor.layout.height * 0.5f
+            );
+
+            var centerInField = editor.ChangeCoordinatesTo(field, editorCenter);
+
+            Debug.Log($"Spawn block: {type}, to position: {centerInField}");
+            graph.AddFreeBlock(expr, centerInField);
+        });
+
+        AddToClassList("expr-block");
+
+        var label = new Label(prefix);
+        label.AddToClassList("expr-prefix");
+        Add(label);
+
+        var fieldPlaceholder = new Label();
+        fieldPlaceholder.AddToClassList("expr-input");
+
+        Add(fieldPlaceholder);
+    }
 }
