@@ -40,12 +40,13 @@ public class ScriptEditorUI : MonoBehaviour
         BuildEditorField(editor);
         BuildElements(elements, editor);
 
-        CreateToolbar(root);
+        BuildToolbar(root);
     }
 
     void BuildEditorField(VisualElement editor)
     {
         var field = editor.Q("Field");
+        field.visible = true;
 
         field.RegisterCallback<PointerDownEvent>(evt =>
         {
@@ -167,23 +168,13 @@ public class ScriptEditorUI : MonoBehaviour
         }
     }
 
-    void CreateToolbar(VisualElement root)
+    void BuildToolbar(VisualElement root)
     {
-        var toolbar = new VisualElement();
-        toolbar.style.flexDirection = FlexDirection.Row;
+        resultLabel = root.Q<Label>("Result");
 
-        resultLabel = new Label("Result:");
 
-        var evalButton = new Button(() => EvaluateSelected())
-        {
-            text = "Execute"
-        };
-
-        toolbar.Add(evalButton);
-        toolbar.Add(resultLabel);
-        toolbar.AddToClassList("expr-toolbar");
-
-        root.Add(toolbar);
+        var evalButton = root.Q<Button>("Execute");
+        evalButton.clicked += EvaluateSelected;
     }
 
     void BuildTestGraph(GraphRoot graph)

@@ -112,3 +112,24 @@
 .unity-foldout > .expr-block {
     align-self: flex-start;
 }
+
+.editor-field {
+    flex-grow: 1;
+    width: 150%;
+    height: 150%;
+    position: absolute;
+    left: -25%;
+    top: -25%;
+    border-left-color: rgb(0, 0, 0);
+    border-right-color: rgb(0, 0, 0);
+    border-top-color: rgb(0, 0, 0);
+    border-bottom-color: rgb(0, 0, 0);
+    border-top-width: 5px;
+    border-right-width: 5px;
+    border-bottom-width: 5px;
+    border-left-width: 5px;
+    transform-origin: left top;
+    background-image: url("project://database/Assets/UI%20Test/editor-tile.png?fileID=21300000&guid=01553528fd169ff40a04e28256d21783&type=3#editor-tile");
+    background-repeat: repeat;
+    background-size: auto;
+}
