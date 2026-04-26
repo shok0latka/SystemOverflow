@@ -1,6 +1,8 @@
+using UnityEngine;
+
 public class HackedState : EnemyStateBase
 {
-    private const float TurnSpeedDegreesPerSecond = 180f;
+    private Vector2 _frozenPosition;
 
     public HackedState(EnemyContext context, EnemyStateMachine stateMachine)
         : base(context, stateMachine)
@@ -13,47 +15,29 @@ public class HackedState : EnemyStateBase
     {
         Context.Suspicion.Reset();
         Context.ResetReturnTimer();
-        Context.HackController?.BeginHackControl();
+        Context.AttackCooldownTimer = 0f;
+        Context.TimeSinceSeenPlayer = 0f;
+        _frozenPosition = Context.Position;
+        Context.Position = _frozenPosition;
+        Context.StopMovement();
     }
 
-    public override void Exit()
-    {
-        Context.HackController?.EndHackControl();
-    }
+    public override void Exit() { }
 
     public override void TickUpdate(float deltaTime)
     {
-        if (Context.HackController != null && Context.HackController.ConsumeInteractRequest())
+        HackStatusSnapshot hackStatus = Context.HackController != null
+            ? Context.HackController.GetHackStatus()
+            : HackStatusSnapshot.Unavailable;
+        if (!hackStatus.IsActive)
         {
-            Context.TryInteractWithNearestForwardInteractable();
-        }
-
-        Context.HackedTimer -= deltaTime;
-        if (Context.HackedTimer <= 0f)
-        {
-            Context.HackedTimer = 0f;
             StateMachine.TransitionTo(EnemyState.Patrol);
         }
     }
 
     public override void TickFixed(float fixedDeltaTime)
     {
-        EnemyHackController hackController = Context.HackController;
-        if (hackController == null)
-        {
-            return;
-        }
-
-        HackedEnemyDriveIntent driveIntent = hackController.CurrentDriveIntent;
-        Context.RotateViewDirection(driveIntent.Turn, TurnSpeedDegreesPerSecond, fixedDeltaTime);
-
-        if (Config != null)
-        {
-            Context.MoveWithRelativeInput(
-                driveIntent.MoveRight,
-                driveIntent.MoveForward,
-                Config.patrolSpeed,
-                fixedDeltaTime);
-        }
+        Context.Position = _frozenPosition;
+        Context.StopMovement();
     }
 }

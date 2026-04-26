@@ -13,6 +13,7 @@ public class EnemyRuntimeSaveData
     public float attackTimer;
     public float searchTimer;
     public float hackedTimer;
+    public float hackDuration;
     public float lastKnownX;
     public float lastKnownY;
 }

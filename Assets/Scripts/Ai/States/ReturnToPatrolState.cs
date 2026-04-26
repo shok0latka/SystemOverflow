@@ -16,11 +16,6 @@ public class ReturnToPatrolState : EnemyStateBase
 
     public override void TickUpdate(float deltaTime)
     {
-        if (Config == null)
-        {
-            return;
-        }
-
         Context.ReturnTimer += deltaTime;
 
         if (Context.CanSeePlayer)
@@ -33,17 +28,15 @@ public class ReturnToPatrolState : EnemyStateBase
         bool timeoutReached = Context.ReturnTimer >= Config.searchDuration;
         if (reachedLastKnown || timeoutReached)
         {
+            Context.Suspicion.Reset();
+            Context.TimeSinceSeenPlayer = 0f;
+            Context.ResetReturnTimer();
             StateMachine.TransitionTo(EnemyState.Patrol);
         }
     }
 
     public override void TickFixed(float fixedDeltaTime)
     {
-        if (Config == null)
-        {
-            return;
-        }
-
         Context.MoveTowards(Context.LastKnownPlayerPosition, Config.patrolSpeed, fixedDeltaTime);
     }
 }

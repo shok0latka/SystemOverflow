@@ -4,6 +4,18 @@ using UnityEngine.Serialization;
 [CreateAssetMenu(fileName = "EnemyConfig", menuName = "SystemOverflow/Enemy Config")]
 public class EnemyConfig : ScriptableObject
 {
+    private const float MinimumSpeed = 0f;
+    private const float MinimumDuration = 0f;
+    private const float MinimumVisionRadius = 0.1f;
+    private const float MinimumVisionConeAngleDegrees = 1f;
+    private const float MaximumVisionConeAngleDegrees = 360f;
+    private const float MinimumAttackRadius = 1f;
+    private const float MinimumAttackCooldown = 0.05f;
+    private const int MinimumAttackDamage = 1;
+    private const float MinimumHackDuration = 0.2f;
+    private const float MinimumHackResistance = 0f;
+    private const float MaximumHackResistance = 0.95f;
+
     [Header("Movement")]
     public float patrolSpeed = 2f;
     public float chaseSpeed = 3.2f;
@@ -27,6 +39,46 @@ public class EnemyConfig : ScriptableObject
     public int attackDamage = 1;
 
     [Header("Hack")]
-    public float baseHackDuration = 6f;
+    [FormerlySerializedAs("baseHackDuration")]
+    public float hackDuration = 40f;
     [Range(0f, 0.95f)] public float hackResistance = 0.2f;
+
+    private void OnEnable()
+    {
+        NormalizeValues();
+    }
+
+    private void OnValidate()
+    {
+        NormalizeValues();
+    }
+
+    private void NormalizeValues()
+    {
+        patrolSpeed = Mathf.Max(MinimumSpeed, patrolSpeed);
+        chaseSpeed = Mathf.Max(MinimumSpeed, chaseSpeed);
+
+        visionRadius = Mathf.Max(MinimumVisionRadius, visionRadius);
+        visionConeAngleDegrees = Mathf.Clamp(
+            visionConeAngleDegrees,
+            MinimumVisionConeAngleDegrees,
+            MaximumVisionConeAngleDegrees);
+        loseSightTime = Mathf.Max(MinimumDuration, loseSightTime);
+        suspicionGainPerSecond = Mathf.Max(MinimumDuration, suspicionGainPerSecond);
+        suspicionDecayPerSecond = Mathf.Max(MinimumDuration, suspicionDecayPerSecond);
+        suspicionThreshold = Mathf.Clamp01(suspicionThreshold);
+
+        aggressiveness = Mathf.Clamp01(aggressiveness);
+        searchDuration = Mathf.Max(MinimumDuration, searchDuration);
+
+        attackRadius = Mathf.Max(MinimumAttackRadius, attackRadius);
+        attackCooldown = Mathf.Max(MinimumAttackCooldown, attackCooldown);
+        attackDamage = Mathf.Max(MinimumAttackDamage, attackDamage);
+
+        hackDuration = Mathf.Max(MinimumHackDuration, hackDuration);
+        hackResistance = Mathf.Clamp(
+            hackResistance,
+            MinimumHackResistance,
+            MaximumHackResistance);
+    }
 }

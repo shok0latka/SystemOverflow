@@ -16,11 +16,6 @@ public class PatrolState : EnemyStateBase
 
     public override void TickUpdate(float deltaTime)
     {
-        if (Config == null)
-        {
-            return;
-        }
-
         if (Context.Suspicion.IsTriggered(Config.suspicionThreshold))
         {
             StateMachine.TransitionTo(EnemyState.Chase);
@@ -29,11 +24,6 @@ public class PatrolState : EnemyStateBase
 
     public override void TickFixed(float fixedDeltaTime)
     {
-        if (Config == null)
-        {
-            return;
-        }
-
         Context.MoveAlongPatrol(Config.patrolSpeed, fixedDeltaTime);
     }
 }

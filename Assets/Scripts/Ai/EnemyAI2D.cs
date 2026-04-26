@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class EnemyAI2D : MonoBehaviour
 {
     [Header("Identity")]
@@ -40,15 +41,13 @@ public class EnemyAI2D : MonoBehaviour
     private bool _bindingsDirty = true;
 
     public string SaveId => persistentId;
+    public EnemyState CurrentState => _stateMachine?.CurrentState ?? currentState;
+    private float DefaultHackDuration => enemyConfig != null ? enemyConfig.hackDuration : 0f;
 
     private void Awake()
     {
         EnsurePersistentId(ensureUniqueInScene: false);
-
-        if (rb == null)
-        {
-            rb = GetComponent<Rigidbody2D>();
-        }
+        ConfigureTopDownRigidbody();
 
         if (!ValidateDependencies())
         {
@@ -75,6 +74,7 @@ public class EnemyAI2D : MonoBehaviour
         _context.TickCooldowns(Time.fixedDeltaTime);
         _context.TickPerception(Time.fixedDeltaTime, _stateMachine.CurrentState != EnemyState.Hacked);
 
+        SyncHackStateFromController();
         _stateMachine.TickUpdate(Time.fixedDeltaTime);
         _stateMachine.TickFixed(Time.fixedDeltaTime);
         SyncDebugRuntime();
@@ -89,8 +89,14 @@ public class EnemyAI2D : MonoBehaviour
     private void OnValidate()
     {
         EnsurePersistentId(ensureUniqueInScene: !Application.isPlaying);
+        ConfigureTopDownRigidbody();
 
         if (!Application.isPlaying)
+        {
+            return;
+        }
+
+        if (!CanRefreshRuntimeFromValidation())
         {
             return;
         }
@@ -103,6 +109,11 @@ public class EnemyAI2D : MonoBehaviour
         RefreshVisionOutline(allowCreate: false);
     }
 
+    private void Reset()
+    {
+        ConfigureTopDownRigidbody();
+    }
+
     private void OnDestroy()
     {
         if (_stateMachine != null)
@@ -113,7 +124,12 @@ public class EnemyAI2D : MonoBehaviour
 
     public EnemyRuntimeSaveData CaptureRuntimeState()
     {
-        EnemyState state = _stateMachine?.CurrentState ?? EnemyState.Patrol;
+        HackStatusSnapshot hackStatus = _hackController != null
+            ? _hackController.GetHackStatus()
+            : HackStatusSnapshot.Unavailable;
+        EnemyState state = hackStatus.IsActive
+            ? EnemyState.Hacked
+            : _stateMachine?.CurrentState ?? EnemyState.Patrol;
         Vector2 position = _context?.Position ?? (Vector2)transform.position;
         Vector2 lastKnown = _context?.LastKnownPlayerPosition ?? position;
 
@@ -128,7 +144,10 @@ public class EnemyAI2D : MonoBehaviour
             timeSinceSeen = _context?.TimeSinceSeenPlayer ?? 0f,
             attackTimer = _context?.AttackCooldownTimer ?? 0f,
             searchTimer = _context?.ReturnTimer ?? 0f,
-            hackedTimer = _context?.HackedTimer ?? 0f,
+            hackedTimer = hackStatus.IsActive ? hackStatus.TimeRemaining : 0f,
+            hackDuration = hackStatus.IsActive && hackStatus.Duration > 0f
+                ? hackStatus.Duration
+                : DefaultHackDuration,
             lastKnownX = lastKnown.x,
             lastKnownY = lastKnown.y
         };
@@ -158,13 +177,29 @@ public class EnemyAI2D : MonoBehaviour
         _context.TimeSinceSeenPlayer = Mathf.Max(0f, data.timeSinceSeen);
         _context.AttackCooldownTimer = Mathf.Max(0f, data.attackTimer);
         _context.ReturnTimer = Mathf.Max(0f, data.searchTimer);
-        _context.HackedTimer = Mathf.Max(0f, data.hackedTimer);
         _context.LastKnownPlayerPosition = new Vector2(data.lastKnownX, data.lastKnownY);
 
         EnemyState restoredState = ParseState(data.state);
-        if (restoredState == EnemyState.Hacked && _context.HackedTimer <= 0f)
+        if (_hackController == null)
         {
-            _context.HackedTimer = 0.2f;
+            ConfigureHackController(allowCreate: true);
+        }
+
+        if (restoredState == EnemyState.Hacked)
+        {
+            float restoredDuration = data.hackDuration > 0f
+                ? data.hackDuration
+                : DefaultHackDuration;
+            bool restoredHack = _hackController != null &&
+                _hackController.RestoreActiveHack(restoredDuration, data.hackedTimer);
+            if (!restoredHack)
+            {
+                restoredState = EnemyState.Patrol;
+            }
+        }
+        else
+        {
+            _hackController?.TryCancelHack();
         }
 
         _stateMachine.TransitionTo(restoredState);
@@ -174,6 +209,8 @@ public class EnemyAI2D : MonoBehaviour
 
     private bool ValidateDependencies()
     {
+        ConfigureTopDownRigidbody();
+
         if (rb == null)
         {
             Debug.LogError($"[{nameof(EnemyAI2D)}] Missing Rigidbody2D on '{name}'. Component disabled.", this);
@@ -189,6 +226,32 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         return true;
+    }
+
+    private bool CanRefreshRuntimeFromValidation()
+    {
+        ResolveRigidbodyReference();
+        return rb != null && enemyConfig != null;
+    }
+
+    private void ResolveRigidbodyReference()
+    {
+        if (rb == null)
+        {
+            rb = GetComponent<Rigidbody2D>();
+        }
+    }
+
+    private void ConfigureTopDownRigidbody()
+    {
+        ResolveRigidbodyReference();
+        if (rb == null)
+        {
+            return;
+        }
+
+        rb.gravityScale = 0f;
+        rb.constraints |= RigidbodyConstraints2D.FreezeRotation;
     }
 
     private void InitializeRuntime()
@@ -241,11 +304,7 @@ public class EnemyAI2D : MonoBehaviour
             return;
         }
 
-        if (enemyConfig != null)
-        {
-            _context.SetConfig(enemyConfig);
-        }
-
+        _context.SetConfig(enemyConfig);
         _context.SetPatrolPoints(patrolPoints);
         _context.ObstacleMask = obstacleMask;
         _context.SetHackController(_hackController);
@@ -271,6 +330,8 @@ public class EnemyAI2D : MonoBehaviour
     private void HandleStateChanged(EnemyState _, EnemyState toState)
     {
         currentState = toState;
+        _hackController?.ClearAttemptProgress();
+
         _statusIndicator?.ApplyState(currentState);
     }
 
@@ -297,10 +358,6 @@ public class EnemyAI2D : MonoBehaviour
     private void ConfigureHackController(bool allowCreate)
     {
         _hackController = EnsureHackControllerComponent(allowCreate);
-        if (_hackController != null)
-        {
-            _hackController.BindOwner(this);
-        }
 
         if (_context != null)
         {
@@ -376,58 +433,44 @@ public class EnemyAI2D : MonoBehaviour
         return _hackController;
     }
 
-    internal bool TryBeginHackInternal(float baseDuration)
+    private void SyncHackStateFromController()
     {
-        if (_context == null || _stateMachine == null)
+        if (_hackController == null || _stateMachine == null)
         {
-            if (!ValidateDependencies())
-            {
-                return false;
-            }
-
-            InitializeRuntime();
-            ApplyContextBindings(force: true);
+            return;
         }
 
-        if (_stateMachine.CurrentState == EnemyState.Hacked && _context.HackedTimer > 0f)
+        HackStatusSnapshot hackStatus = _hackController.GetHackStatus();
+        if (hackStatus.IsActive && _stateMachine.CurrentState != EnemyState.Hacked)
         {
-            return false;
+            _stateMachine.TransitionTo(EnemyState.Hacked);
+            return;
         }
 
-        _context.StartHack(baseDuration);
-        _stateMachine.TransitionTo(EnemyState.Hacked);
-        return true;
+        if (!hackStatus.IsActive && _stateMachine.CurrentState == EnemyState.Hacked)
+        {
+            _stateMachine.TransitionTo(EnemyState.Patrol);
+        }
     }
 
     private void RefreshVisionOutline(bool allowCreate)
     {
         _visionOutline = EnsureVisionOutlineComponent(allowCreate);
-        if (_visionOutline == null)
+        if (_visionOutline == null || _context == null)
         {
             return;
         }
 
-        Vector3 origin = _context != null ? (Vector3)_context.Position : transform.position;
-        Vector2 viewDirection = _context != null ? _context.ViewDirection : Vector2.right;
-        float radius = enemyConfig != null ? Mathf.Max(0f, enemyConfig.visionRadius) : 0f;
-        float closeVisionRadius = _context != null
-            ? _context.CloseVisionRadius
-            : enemyConfig != null
-                ? Mathf.Max(1f, enemyConfig.attackRadius)
-                : 1f;
-        float coneAngleDegrees = _context != null
-            ? _context.ViewConeAngleDegrees
-            : enemyConfig != null
-                ? Mathf.Clamp(enemyConfig.visionConeAngleDegrees, 1f, 360f)
-                : 90f;
-        bool shouldShow = _context != null && currentState != EnemyState.Hacked;
+        Vector3 origin = _context.Position;
+        Vector2 viewDirection = _context.ViewDirection;
+        bool shouldShow = currentState != EnemyState.Hacked;
 
         _visionOutline.RefreshOutline(
             origin,
             viewDirection,
-            radius,
-            closeVisionRadius,
-            coneAngleDegrees,
+            enemyConfig.visionRadius,
+            _context.CloseVisionRadius,
+            _context.ViewConeAngleDegrees,
             shouldShow,
             allowCreate);
     }
@@ -509,7 +552,6 @@ public class EnemyAI2D : MonoBehaviour
 
         return EnemyState.Patrol;
     }
-
     private void EnsurePersistentId(bool ensureUniqueInScene)
     {
         if (string.IsNullOrWhiteSpace(persistentId))

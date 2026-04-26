@@ -20,7 +20,17 @@ public class PlayerMovement : MonoBehaviour
 
     private void Awake()
     {
-        _rb = GetComponent<Rigidbody2D>();
+        ConfigureTopDownRigidbody();
+    }
+
+    private void Reset()
+    {
+        ConfigureTopDownRigidbody();
+    }
+
+    private void OnValidate()
+    {
+        ConfigureTopDownRigidbody();
     }
 
     private void Update()
@@ -33,7 +43,33 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (_rb == null)
+        {
+            ConfigureTopDownRigidbody();
+        }
+
+        if (_rb == null)
+        {
+            return;
+        }
+
         _rb.velocity = _input * moveSpeed;
+    }
+
+    private void ConfigureTopDownRigidbody()
+    {
+        if (_rb == null)
+        {
+            _rb = GetComponent<Rigidbody2D>();
+        }
+
+        if (_rb == null)
+        {
+            return;
+        }
+
+        _rb.gravityScale = 0f;
+        _rb.constraints |= RigidbodyConstraints2D.FreezeRotation;
     }
 
     public void SpeedUp(bool isSpeed)
