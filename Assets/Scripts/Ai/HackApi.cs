@@ -11,9 +11,13 @@ public interface IHackable
 
 public interface IHackCommandSink
 {
-    bool TrySetControlIntent(HackControlIntent intent);
-    bool TryRequestInteract();
-    void ClearControlIntent();
+    bool TryMoveForward();
+    bool TryMoveLeft();
+    bool TryMoveRight();
+    bool TryRotateLeft();
+    bool TryRotateRight();
+    bool TryInteract();
+    void ClearCommand();
 }
 
 public enum HackPhase
@@ -101,24 +105,5 @@ public readonly struct HackBeginResult
     public static HackBeginResult Failure(HackFailureReason failureReason)
     {
         return new HackBeginResult(false, failureReason, 0f);
-    }
-}
-
-public readonly struct HackControlIntent
-{
-    public HackControlIntent(float moveRight, float moveForward, float turn)
-    {
-        MoveRight = Mathf.Clamp(moveRight, -1f, 1f);
-        MoveForward = Mathf.Clamp(moveForward, -1f, 1f);
-        Turn = Mathf.Clamp(turn, -1f, 1f);
-    }
-
-    public float MoveRight { get; }
-    public float MoveForward { get; }
-    public float Turn { get; }
-
-    public static HackControlIntent Clamp(HackControlIntent intent)
-    {
-        return new HackControlIntent(intent.MoveRight, intent.MoveForward, intent.Turn);
     }
 }

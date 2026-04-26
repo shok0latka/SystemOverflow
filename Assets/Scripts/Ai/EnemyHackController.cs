@@ -6,6 +6,17 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
     private const float MinimumVisibleProgress = 0f;
     private const float MinimumHackDuration = 0.2f;
 
+    public enum HackCommand
+    {
+        None,
+        MoveForward,
+        MoveLeft,
+        MoveRight,
+        RotateLeft,
+        RotateRight,
+        Interact
+    }
+
     [SerializeField] private EnemyHackProgressIndicator progressIndicator;
     [SerializeField] private EnemyHackCooldownIndicator cooldownIndicator;
     [SerializeField] private Vector3 indicatorOffset = new Vector3(0f, 1.75f, 0f);
@@ -17,9 +28,7 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
     private float _timeRemaining;
     private bool _hasAttemptProgress;
     private float _attemptProgress;
-    private bool _hasControlIntent;
-    private HackControlIntent _controlIntent;
-    private bool _interactRequested;
+    private HackCommand _pendingCommand;
 
     private void Awake()
     {
@@ -139,42 +148,34 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         _attemptProgress = 0f;
     }
 
-    public bool TrySetControlIntent(HackControlIntent intent)
-    {
-        if (!CanAcceptCommands())
-        {
-            return false;
-        }
+    public bool TryMoveForward() => TrySetCommand(HackCommand.MoveForward);
 
-        _controlIntent = HackControlIntent.Clamp(intent);
-        _hasControlIntent = true;
-        return true;
+    public bool TryMoveLeft() => TrySetCommand(HackCommand.MoveLeft);
+
+    public bool TryMoveRight() => TrySetCommand(HackCommand.MoveRight);
+
+    public bool TryRotateLeft() => TrySetCommand(HackCommand.RotateLeft);
+
+    public bool TryRotateRight() => TrySetCommand(HackCommand.RotateRight);
+
+    public bool TryInteract() => TrySetCommand(HackCommand.Interact);
+
+    public void ClearCommand()
+    {
+        _pendingCommand = HackCommand.None;
     }
 
-    public bool TryRequestInteract()
+    public HackCommand ConsumeCommand()
     {
-        if (!CanAcceptCommands())
+        if (!_isActive)
         {
-            return false;
+            ClearCommand();
+            return HackCommand.None;
         }
 
-        _interactRequested = true;
-        return true;
-    }
-
-    public void ClearControlIntent()
-    {
-        bool hasStoredCommand = _hasControlIntent ||
-            _interactRequested ||
-            HasAnyInput(_controlIntent);
-        if (!hasStoredCommand)
-        {
-            return;
-        }
-
-        _hasControlIntent = false;
-        _controlIntent = default;
-        _interactRequested = false;
+        HackCommand command = _pendingCommand;
+        ClearCommand();
+        return command;
     }
 
     private void RefreshPresentation()
@@ -216,7 +217,7 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         _activeDuration = Mathf.Max(MinimumHackDuration, duration);
         _timeRemaining = Mathf.Clamp(timeRemaining, 0f, _activeDuration);
         ClearAttemptProgress();
-        ClearControlIntent();
+        ClearCommand();
     }
 
     private void EndActiveHack()
@@ -225,7 +226,7 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         _activeDuration = 0f;
         _timeRemaining = 0f;
         ClearAttemptProgress();
-        ClearControlIntent();
+        ClearCommand();
     }
 
     private void TickActiveHack(float deltaTime)
@@ -288,11 +289,15 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         return _isActive;
     }
 
-    private static bool HasAnyInput(HackControlIntent intent)
+    private bool TrySetCommand(HackCommand command)
     {
-        return !Mathf.Approximately(intent.MoveRight, 0f) ||
-            !Mathf.Approximately(intent.MoveForward, 0f) ||
-            !Mathf.Approximately(intent.Turn, 0f);
+        if (!CanAcceptCommands())
+        {
+            return false;
+        }
+
+        _pendingCommand = command;
+        return true;
     }
 
     private bool CanBeginHack()

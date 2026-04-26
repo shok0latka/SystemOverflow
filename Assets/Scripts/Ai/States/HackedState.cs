@@ -1,8 +1,6 @@
-using UnityEngine;
-
 public class HackedState : EnemyStateBase
 {
-    private Vector2 _frozenPosition;
+    private const float HackTurnDegreesPerSecond = 180f;
 
     public HackedState(EnemyContext context, EnemyStateMachine stateMachine)
         : base(context, stateMachine)
@@ -17,12 +15,14 @@ public class HackedState : EnemyStateBase
         Context.ResetReturnTimer();
         Context.AttackCooldownTimer = 0f;
         Context.TimeSinceSeenPlayer = 0f;
-        _frozenPosition = Context.Position;
-        Context.Position = _frozenPosition;
         Context.StopMovement();
     }
 
-    public override void Exit() { }
+    public override void Exit()
+    {
+        Context.HackController?.ClearCommand();
+        Context.StopMovement();
+    }
 
     public override void TickUpdate(float deltaTime)
     {
@@ -37,7 +37,39 @@ public class HackedState : EnemyStateBase
 
     public override void TickFixed(float fixedDeltaTime)
     {
-        Context.Position = _frozenPosition;
-        Context.StopMovement();
+        EnemyHackController hackController = Context.HackController;
+        if (hackController == null || !hackController.GetHackStatus().IsActive)
+        {
+            Context.StopMovement();
+            return;
+        }
+
+        switch (hackController.ConsumeCommand())
+        {
+            case EnemyHackController.HackCommand.MoveForward:
+                Context.MoveWithRelativeInput(0f, 1f, Config.chaseSpeed, fixedDeltaTime);
+                break;
+            case EnemyHackController.HackCommand.MoveLeft:
+                Context.MoveWithRelativeInput(-1f, 0f, Config.chaseSpeed, fixedDeltaTime);
+                break;
+            case EnemyHackController.HackCommand.MoveRight:
+                Context.MoveWithRelativeInput(1f, 0f, Config.chaseSpeed, fixedDeltaTime);
+                break;
+            case EnemyHackController.HackCommand.RotateLeft:
+                Context.RotateViewDirection(-1f, HackTurnDegreesPerSecond, fixedDeltaTime);
+                Context.StopMovement();
+                break;
+            case EnemyHackController.HackCommand.RotateRight:
+                Context.RotateViewDirection(1f, HackTurnDegreesPerSecond, fixedDeltaTime);
+                Context.StopMovement();
+                break;
+            case EnemyHackController.HackCommand.Interact:
+                Context.TryInteractWithNearestForwardInteractable();
+                Context.StopMovement();
+                break;
+            default:
+                Context.StopMovement();
+                break;
+        }
     }
 }
