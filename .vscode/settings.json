@@ -58,7 +58,9 @@
     },
     "dotnet.defaultSolution": "SystemOverflow.sln",
     "cSpell.words": [
+        "arithmetics",
         "Mathf",
+        "Rect",
         "UXML"
     ],
     "cSpell.ignorePaths": [
