@@ -1,0 +1,31 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Test/expression-block.uss?fileID=7433441132597879392&amp;guid=8c7348551ba62f4409ddbb595cb57267&amp;type=3#expression-block" />
+    <ui:VisualElement name="SO_Script_Editor" style="flex-grow: 1; flex-direction: row-reverse;">
+        <ui:VisualElement name="Editor" class="so-editor" style="flex-grow: 1;">
+            <ui:VisualElement name="Field" class="editor-field" style="visibility: hidden;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="Elements" tabindex="1" class="so-elements" style="width: 20%; flex-grow: 0; position: relative; min-width: 250px; max-width: 500px;">
+            <ui:ScrollView scroll-deceleration-rate="0,135" elasticity="0,1" vertical-scroller-visibility="AlwaysVisible" mouse-wheel-scroll-size="1000" style="flex-grow: 1; font-size: 24px;">
+                <ui:Foldout text="Expressions" value="true" name="Expressions" style="margin-right: 20px;">
+                    <ui:Foldout text="Binary" name="BinaryExpressions" value="true">
+                        <ui:Foldout text="Arithmetics" name="Arithmetics" value="true" />
+                        <ui:Foldout text="Comparison" name="Comparison" value="true" />
+                    </ui:Foldout>
+                    <ui:Foldout text="Literal" name="LiteralExpressions" />
+                </ui:Foldout>
+                <ui:Foldout text="Control Flow Statements" name="ControlFlowStmts" style="margin-right: 20px;" />
+                <ui:Foldout text="Variables" name="Variables" style="margin-right: 20px;">
+                    <ui:VisualElement style="flex-grow: 1; height: 100px; margin-right: 20px; margin-bottom: 20px;">
+                        <ui:VisualElement style="flex-grow: 1; background-color: rgba(255, 0, 230, 0.53); align-items: center; justify-content: center;">
+                            <ui:Label tabindex="-1" text="Test" parse-escape-sequences="true" display-tooltip-when-elided="true" style="-unity-text-align: middle-center;" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:Foldout>
+            </ui:ScrollView>
+        </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:VisualElement name="Toolbar" class="expr-toolbar" style="flex-grow: 0; display: flex; height: 100px; border-top-width: 4px; border-top-color: rgb(0, 0, 0); flex-direction: row; font-size: 24px; background-color: rgb(128, 128, 128);">
+        <ui:Button text="Execute" parse-escape-sequences="true" display-tooltip-when-elided="true" name="Execute" style="width: 200px; border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom-right-radius: 8px; border-bottom-left-radius: 8px; margin-left: 20px;" />
+        <ui:Label tabindex="-1" text="Result:" parse-escape-sequences="true" display-tooltip-when-elided="true" name="Result" style="margin-left: 20px;" />
+    </ui:VisualElement>
+</ui:UXML>

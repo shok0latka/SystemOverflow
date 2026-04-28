@@ -56,5 +56,21 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "SystemOverflow.sln"
+    "dotnet.defaultSolution": "SystemOverflow.sln",
+    "cSpell.words": [
+        "arithmetics",
+        "Mathf",
+        "Rect",
+        "UXML"
+    ],
+    "cSpell.ignorePaths": [
+        "package-lock.json",
+        "node_modules",
+        "vscode-extension",
+        ".git/{info,lfs,logs,refs,objects}/**",
+        ".git/{index,*refs,*HEAD}",
+        ".vscode",
+        ".vscode-insiders",
+        "Assets/UI Test/editor-layout.uxml"
+    ]
 }
