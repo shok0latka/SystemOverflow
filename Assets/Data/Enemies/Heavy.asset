@@ -21,7 +21,7 @@ MonoBehaviour:
   suspicionDecayPerSecond: 0.2
   suspicionThreshold: 0.5
   aggressiveness: 0.8
-  searchDuration: 4.5
+  searchDuration: 10
   attackRadius: 1.4
   attackCooldown: 0.6
   attackDamage: 2
