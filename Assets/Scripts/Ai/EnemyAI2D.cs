@@ -28,6 +28,9 @@ public class EnemyAI2D : MonoBehaviour
     [SerializeField] private TextMesh suspicionText;
     [SerializeField] private Vector3 suspicionOffset = new Vector3(0f, 1.65f, 0f);
 
+    [Header("Debug Indicators")]
+    [SerializeField] private bool showEnemyDebugIndicators;
+
     [Header("Debug Runtime")]
     [SerializeField] private EnemyState currentState = EnemyState.Patrol;
     [SerializeField, Range(0f, 1f)] private float suspicion;
@@ -60,9 +63,13 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         ConfigureHackController(allowCreate: true);
-        ConfigureStatusIndicator(allowCreate: true);
+        if (showEnemyDebugIndicators)
+        {
+            ConfigureStatusIndicator(allowCreate: true);
+            ConfigureVisionOutline(allowCreate: true);
+        }
+
         ConfigureSuspicionIndicator(allowCreate: true);
-        ConfigureVisionOutline(allowCreate: true);
         InitializeRuntime();
         ApplyContextBindings(force: true);
         SyncDebugRuntime();
@@ -88,9 +95,13 @@ public class EnemyAI2D : MonoBehaviour
 
     private void LateUpdate()
     {
-        _statusIndicator?.RefreshPresentation();
         RefreshSuspicionIndicator(allowCreate: true);
-        RefreshVisionOutline(allowCreate: true);
+
+        if (showEnemyDebugIndicators)
+        {
+            RefreshStatusIndicator(allowCreate: true);
+            RefreshVisionOutline(allowCreate: true);
+        }
     }
 
     private void OnValidate()
@@ -110,12 +121,21 @@ public class EnemyAI2D : MonoBehaviour
 
         _bindingsDirty = true;
         ConfigureHackController(allowCreate: false);
-        ConfigureStatusIndicator(allowCreate: false);
+        if (showEnemyDebugIndicators)
+        {
+            ConfigureStatusIndicator(allowCreate: false);
+            ConfigureVisionOutline(allowCreate: false);
+        }
+
         ConfigureSuspicionIndicator(allowCreate: false);
-        ConfigureVisionOutline(allowCreate: false);
         ApplyContextBindings(force: false);
         RefreshSuspicionIndicator(allowCreate: false);
-        RefreshVisionOutline(allowCreate: false);
+
+        if (showEnemyDebugIndicators)
+        {
+            RefreshStatusIndicator(allowCreate: false);
+            RefreshVisionOutline(allowCreate: false);
+        }
     }
 
     private void Reset()
@@ -341,7 +361,10 @@ public class EnemyAI2D : MonoBehaviour
         currentState = toState;
         _hackController?.ClearAttemptProgress();
 
-        _statusIndicator?.ApplyState(currentState);
+        if (showEnemyDebugIndicators)
+        {
+            _statusIndicator?.ApplyState(currentState);
+        }
     }
 
     private void SyncDebugRuntime()
@@ -362,6 +385,18 @@ public class EnemyAI2D : MonoBehaviour
 
         _statusIndicator.Configure(statusText, statusOffset, allowCreate);
         _statusIndicator.ApplyState(currentState, allowCreate);
+    }
+
+    private void RefreshStatusIndicator(bool allowCreate)
+    {
+        _statusIndicator = EnsureStatusIndicatorComponent(allowCreate);
+        if (_statusIndicator == null)
+        {
+            return;
+        }
+
+        _statusIndicator.ApplyState(currentState, allowCreate);
+        _statusIndicator.RefreshPresentation();
     }
 
     private void ConfigureSuspicionIndicator(bool allowCreate)
