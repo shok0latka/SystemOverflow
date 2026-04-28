@@ -20,13 +20,15 @@ public class SuspicionMeter
 
     public void Tick(bool detected, float deltaTime)
     {
+        float safeDeltaTime = Mathf.Max(0f, deltaTime);
+
         if (detected)
         {
-            Value += _increasePerSecond * deltaTime;
+            Value += _increasePerSecond * safeDeltaTime;
         }
         else
         {
-            Value -= _decreasePerSecond * deltaTime;
+            Value -= _decreasePerSecond * safeDeltaTime;
         }
 
         Value = Mathf.Clamp01(Value);
