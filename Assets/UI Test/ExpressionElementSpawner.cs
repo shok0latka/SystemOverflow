@@ -96,4 +96,32 @@ public class ExpressionElementSpawner: VisualElement
 
         Add(fieldPlaceholder);
     }
+
+    public ExpressionElementSpawner(bool constant, VisualElement editor)
+    {
+        var field = editor.Q("Field");
+        var graph = field.Q<GraphRoot>();
+
+        AddToClassList("expr-block");
+
+        var label = new Label(constant ? "true" : "false");
+        label.AddToClassList("expr-bool");
+        Add(label);
+
+        RegisterCallback<ClickEvent>(evt =>
+        {
+            evt.StopPropagation();
+            var expr = constant ? new ExpressionBlockView(new TrueConstant()) : new ExpressionBlockView(new FalseConstant());
+
+            var editorCenter = new Vector2(
+                editor.layout.width * 0.5f,
+                editor.layout.height * 0.5f
+            );
+
+            var centerInField = editor.ChangeCoordinatesTo(field, editorCenter);
+
+            Debug.Log($"Spawn block: {constant}, to position: {centerInField}");
+            graph.AddFreeBlock(expr, centerInField);
+        });
+    }
 }

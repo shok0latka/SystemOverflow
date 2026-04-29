@@ -176,6 +176,12 @@ public class ScriptEditorUI : MonoBehaviour
             var block = new ExpressionElementSpawner(type, editor);
             literal.Add(block);
         }
+
+        foreach (var constant in new bool[] {true, false})
+        {
+            var block = new ExpressionElementSpawner(constant, editor);
+            literal.Add(block);
+        }
     }
 
     void BuildToolbar(VisualElement root)
