@@ -111,6 +111,12 @@
 
 .unity-foldout > .expr-block {
     align-self: flex-start;
+    margin: 4px;
+}
+
+.unity-foldout > .stmt-block {
+    align-self: flex-start;
+    margin: 4px;
 }
 
 .editor-field {

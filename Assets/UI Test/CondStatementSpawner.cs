@@ -14,13 +14,10 @@ public enum CondStatementType
 
 public class CondStatementSpawner: VisualElement
 {
-    private readonly VisualElement content;
     public CondStatementSpawner(CondStatementType type, VisualElement editor)
     {
-        content = new VisualElement();
-        content.AddToClassList("stmt-block");
+        AddToClassList("stmt-block");
 
-        Add(content);
 
         switch(type)
         {
@@ -117,18 +114,18 @@ public class CondStatementSpawner: VisualElement
     {
         var title = new Label(text);
         title.AddToClassList("stmt-title");
-        content.Add(title);
+        Add(title);
     }
 
     void BuildStatementSlot(string labelText)
     {
         var label = new Label(labelText);
         label.AddToClassList("stmt-arg-label");
-        content.Add(label);
+        Add(label);
 
         var slot = new VisualElement();
         slot.AddToClassList("stmt-slot");
         slot.AddToClassList("stmt-slot-placeholder");
-        content.Add(slot);
+        Add(slot);
     }
 }
