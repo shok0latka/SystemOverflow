@@ -182,6 +182,13 @@ public class ScriptEditorUI : MonoBehaviour
             var block = new ExpressionElementSpawner(constant, editor);
             literal.Add(block);
         }
+        var cfStmts = elements.Q<Foldout>("ControlFlowStmts");
+
+        foreach (var type in Enum.GetValues(typeof(CondStatementType)).Cast<CondStatementType>())
+        {
+            var block = new CondStatementSpawner(type, editor);
+            cfStmts.Add(block);
+        }
     }
 
     void BuildToolbar(VisualElement root)
