@@ -74,6 +74,13 @@ public class ExpressionGraphController
         }
         else if (SelectedBlock is StatementBlockView stmtBlock)
         {
+            if (stmtBlock.IsPinned)
+            {
+                stmtBlock.RemoveFromClassList("expr-selected");
+                SelectedBlock = null;
+                return;
+            }
+
             Debug.Log($"[GraphController] Place statement block '{stmtBlock.DebugName}' on canvas");
             DetachBlock(stmtBlock);
             stmtBlock.MakeFree(mousePosition);
@@ -132,7 +139,7 @@ public class ExpressionGraphController
         ClearSelection();
     }
 
-    void ClearSelection()
+    public void ClearSelection()
     {
         SelectedSlot?.RemoveFromClassList("expr-selected");
         SelectedBlock?.RemoveFromClassList("expr-selected");
@@ -179,6 +186,12 @@ public class ExpressionGraphController
     void Connect(StatementBlockView block, StmtSlotView slot)
     {
         Debug.Log($"[GraphController] Connect statement -> {block.DebugName} -> {slot.ParentBlock.DebugName}:{slot.Kind}");
+
+        if (block.IsPinned)
+        {
+            Debug.LogWarning($"[GraphController] Connection rejected: pinned statement '{block.DebugName}' cannot be moved.");
+            return;
+        }
 
         if (slot.ParentBlock == block || WouldCreateStatementCycle(slot.ParentBlock.Statement, block.Statement))
         {
@@ -239,6 +252,11 @@ public class ExpressionGraphController
         else if (child is WhileStatement whileStmt)
         {
             if (whileStmt.Body != null && WouldCreateStatementCycle(parent, whileStmt.Body))
+                return true;
+        }
+        else if (child is ProgramRootStatement programRoot)
+        {
+            if (programRoot.Body != null && WouldCreateStatementCycle(parent, programRoot.Body))
                 return true;
         }
 

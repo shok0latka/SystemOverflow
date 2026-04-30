@@ -16,6 +16,8 @@ public class StatementBlockView : VisualElement, IExpressionSlotHost
     public List<ExprSlotView> ExprSlots { get; } = new();
     public List<StmtSlotView> StmtSlots { get; } = new();
 
+    public bool IsPinned { get; private set; }
+
     public StmtSlotView? ParentSlot = null;
 
     readonly VisualElement content;
@@ -49,6 +51,16 @@ public class StatementBlockView : VisualElement, IExpressionSlotHost
     public StatementBlockView(AssignStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
     {
         BuildNextSlot();
+    }
+
+    public StatementBlockView(EnemyCommandStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
+    {
+        BuildNextSlot();
+    }
+
+    public StatementBlockView(ProgramRootStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
+    {
+        BuildStatementSlot("Run:", StmtSlotKind.Body);
     }
 
     public StatementBlockView(IfStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
@@ -156,6 +168,8 @@ public class StatementBlockView : VisualElement, IExpressionSlotHost
             case StmtSlotKind.Body:
                 if (Statement is WhileStatement whileStmt)
                     whileStmt.Body = block.Statement;
+                else if (Statement is ProgramRootStatement programRoot)
+                    programRoot.Body = block.Statement;
                 break;
         }
     }
@@ -178,8 +192,15 @@ public class StatementBlockView : VisualElement, IExpressionSlotHost
             case StmtSlotKind.Body:
                 if (Statement is WhileStatement whileStmt)
                     whileStmt.Body = null;
+                else if (Statement is ProgramRootStatement programRoot)
+                    programRoot.Body = null;
                 break;
         }
+    }
+
+    public void Pin()
+    {
+        IsPinned = true;
     }
 
     public void AttachToSlot()
@@ -191,6 +212,9 @@ public class StatementBlockView : VisualElement, IExpressionSlotHost
 
     public void MakeFree(Vector2 pos)
     {
+        if (IsPinned)
+            return;
+
         style.position = Position.Absolute;
 
         var size = content.resolvedStyle;

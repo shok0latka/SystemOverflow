@@ -2,6 +2,10 @@ public class HackedState : EnemyStateBase
 {
     private const float HackTurnDegreesPerSecond = 180f;
 
+    private HackCommand _activeCommand = HackCommand.None;
+    private float _activeCommandTimeRemaining;
+    private bool _activeInteractExecuted;
+
     public HackedState(EnemyContext context, EnemyStateMachine stateMachine)
         : base(context, stateMachine)
     {
@@ -11,6 +15,7 @@ public class HackedState : EnemyStateBase
 
     public override void Enter()
     {
+        ResetActiveCommand();
         Context.Suspicion.Reset();
         Context.ResetReturnTimer();
         Context.AttackCooldownTimer = 0f;
@@ -20,7 +25,8 @@ public class HackedState : EnemyStateBase
 
     public override void Exit()
     {
-        Context.HackController?.ClearCommand();
+        ResetActiveCommand();
+        Context.HackController?.ClearCommands();
         Context.StopMovement();
     }
 
@@ -40,36 +46,81 @@ public class HackedState : EnemyStateBase
         EnemyHackController hackController = Context.HackController;
         if (hackController == null || !hackController.GetHackStatus().IsActive)
         {
+            ResetActiveCommand();
             Context.StopMovement();
             return;
         }
 
-        switch (hackController.ConsumeCommand())
+        if (_activeCommand == HackCommand.None &&
+            !TryBeginNextCommand(hackController, fixedDeltaTime))
         {
-            case EnemyHackController.HackCommand.MoveForward:
+            Context.StopMovement();
+            return;
+        }
+
+        switch (_activeCommand)
+        {
+            case HackCommand.MoveForward:
                 Context.MoveWithRelativeInput(0f, 1f, Config.chaseSpeed, fixedDeltaTime);
                 break;
-            case EnemyHackController.HackCommand.MoveLeft:
+            case HackCommand.MoveLeft:
                 Context.MoveWithRelativeInput(-1f, 0f, Config.chaseSpeed, fixedDeltaTime);
                 break;
-            case EnemyHackController.HackCommand.MoveRight:
+            case HackCommand.MoveRight:
                 Context.MoveWithRelativeInput(1f, 0f, Config.chaseSpeed, fixedDeltaTime);
                 break;
-            case EnemyHackController.HackCommand.RotateLeft:
+            case HackCommand.RotateLeft:
                 Context.RotateViewDirection(-1f, HackTurnDegreesPerSecond, fixedDeltaTime);
                 Context.StopMovement();
                 break;
-            case EnemyHackController.HackCommand.RotateRight:
+            case HackCommand.RotateRight:
                 Context.RotateViewDirection(1f, HackTurnDegreesPerSecond, fixedDeltaTime);
                 Context.StopMovement();
                 break;
-            case EnemyHackController.HackCommand.Interact:
-                Context.TryInteractWithNearestForwardInteractable();
+            case HackCommand.Interact:
+                if (!_activeInteractExecuted)
+                {
+                    Context.TryInteractWithNearestForwardInteractable();
+                    _activeInteractExecuted = true;
+                }
+
+                Context.StopMovement();
+                ResetActiveCommand();
+                return;
+            case HackCommand.None:
                 Context.StopMovement();
                 break;
             default:
                 Context.StopMovement();
                 break;
         }
+
+        _activeCommandTimeRemaining -= fixedDeltaTime;
+        if (_activeCommandTimeRemaining <= 0f)
+        {
+            ResetActiveCommand();
+        }
+    }
+
+    private bool TryBeginNextCommand(EnemyHackController hackController, float fixedDeltaTime)
+    {
+        if (!hackController.TryDequeueCommand(out HackCommand command))
+        {
+            return false;
+        }
+
+        _activeCommand = command;
+        _activeCommandTimeRemaining = UnityEngine.Mathf.Max(
+            fixedDeltaTime,
+            hackController.CommandStepDuration);
+        _activeInteractExecuted = false;
+        return true;
+    }
+
+    private void ResetActiveCommand()
+    {
+        _activeCommand = HackCommand.None;
+        _activeCommandTimeRemaining = 0f;
+        _activeInteractExecuted = false;
     }
 }

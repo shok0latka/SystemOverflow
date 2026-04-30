@@ -1,17 +1,17 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-using Script.Core.Expressions;
-using Script.Core.Expressions.LiteralExpressions.Implementations;
 using Script.Core.Expressions.BinaryExpressions;
 using Script.Core.Expressions.BinaryExpressions.Arithmetic;
 using Script.Core.Expressions.BinaryExpressions.Comparison;
-
+using Script.Core.Expressions.LiteralExpressions;
+using Script.Core.Expressions.LiteralExpressions.Implementations;
 using Script.Core.Statements;
-using Script.Core.Variables.Implementations;
 using Script.Core.Utils;
-using System;
-using System.Linq;
+using Script.Core.Variables.Implementations;
 
 public class ScriptEditorUI : MonoBehaviour
 {
@@ -19,18 +19,44 @@ public class ScriptEditorUI : MonoBehaviour
     [SerializeField] StyleSheet style;
     [SerializeField] OverloadSystem system;
 
+    [Header("Runtime Hack UI")]
+    [SerializeField] private bool openOnStart = true;
+    [SerializeField] private bool pauseWhileEditing = true;
+    [SerializeField] private PlayerInteractor playerInteractor;
+    [SerializeField] private bool autoFindPlayerInteractor = true;
+
     Label resultLabel;
+    GraphRoot graph;
+    ProgramRootStatement programRootStatement;
+    StatementBlockView programRootBlock;
+    EnemyHackController boundTarget;
+    PlayerInteractor subscribedInteractor;
+
     Vector3 startMouse;
     float startLeft;
     float startTop;
 
-    float minZoom;
+    float minZoom = 0.25f;
     float zoom = 1f;
     float maxZoom = 2f;
-    
+
+    bool timePausedForEditing;
+    float previousTimeScale = 1f;
 
     void Start()
     {
+        if (document == null)
+        {
+            document = GetComponent<UIDocument>();
+        }
+
+        if (document == null)
+        {
+            Debug.LogError($"[{nameof(ScriptEditorUI)}] Missing UIDocument reference.", this);
+            enabled = false;
+            return;
+        }
+
         var root = document.rootVisualElement;
 
         if (style != null)
@@ -41,8 +67,17 @@ public class ScriptEditorUI : MonoBehaviour
 
         BuildEditorField(editor);
         BuildElements(elements, editor);
-
         BuildToolbar(root);
+        SubscribeToHackEvents();
+
+        SetEditorVisible(openOnStart);
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeFromHackEvents();
+        RestoreTimeAfterEditing();
+        EnemyCommandScriptContext.Clear(boundTarget);
     }
 
     void BuildEditorField(VisualElement editor)
@@ -55,7 +90,7 @@ public class ScriptEditorUI : MonoBehaviour
             startMouse = evt.position;
 
             startLeft = field.resolvedStyle.left;
-            startTop  = field.resolvedStyle.top;
+            startTop = field.resolvedStyle.top;
         });
 
         field.RegisterCallback<PointerMoveEvent>(evt =>
@@ -65,10 +100,10 @@ public class ScriptEditorUI : MonoBehaviour
                 Vector2 delta = evt.position - startMouse;
 
                 float newLeft = startLeft + delta.x;
-                float newTop  = startTop + delta.y;
+                float newTop = startTop + delta.y;
 
                 field.style.left = newLeft;
-                field.style.top  = newTop;
+                field.style.top = newTop;
             }
         });
 
@@ -76,8 +111,6 @@ public class ScriptEditorUI : MonoBehaviour
         {
             float zoomDelta = -evt.delta.y;
             float newZoom = Mathf.Clamp(zoom + zoomDelta, minZoom, maxZoom);
-
-            Debug.Log($"New zoom: {newZoom}");
 
             if (Mathf.Approximately(newZoom, zoom))
                 return;
@@ -88,29 +121,26 @@ public class ScriptEditorUI : MonoBehaviour
             zoom = newZoom;
 
             float left = field.resolvedStyle.left;
-            float top  = field.resolvedStyle.top;
+            float top = field.resolvedStyle.top;
 
             float scaleFactor = zoom / oldZoom;
 
             float newLeft = mousePos.x - (mousePos.x - left) * scaleFactor;
-            float newTop  = mousePos.y - (mousePos.y - top) * scaleFactor;
+            float newTop = mousePos.y - (mousePos.y - top) * scaleFactor;
 
             field.style.scale = new Scale(new Vector3(zoom, zoom, 1));
 
             field.style.left = newLeft;
-            field.style.top  = newTop;
+            field.style.top = newTop;
 
             evt.StopPropagation();
         });
-        
+
         field.RegisterCallback<GeometryChangedEvent>(evt =>
         {
-            Debug.Log($"Geometry Changed");
-
             minZoom = Mathf.Max(
-                editor.layout.width  / field.layout.width,
-                editor.layout.height / field.layout.height
-            );
+                editor.layout.width / field.layout.width,
+                editor.layout.height / field.layout.height);
 
             var fieldRect = field.layout;
             var editorRect = editor.layout;
@@ -130,16 +160,15 @@ public class ScriptEditorUI : MonoBehaviour
             float maxY = 0;
 
             newLeft = Mathf.Clamp(newLeft, minX, maxX);
-            newTop  = Mathf.Clamp(newTop,  minY, maxY);
+            newTop = Mathf.Clamp(newTop, minY, maxY);
 
             field.style.top = newTop;
             field.style.left = newLeft;
         });
 
-        var graph = new GraphRoot();        
+        graph = new GraphRoot();
         field.Add(graph);
-
-        // BuildTestGraph(graph);
+        BuildProgramRoot();
 
         field.RegisterCallback<PointerDownEvent>(evt =>
         {
@@ -153,20 +182,23 @@ public class ScriptEditorUI : MonoBehaviour
 
     void BuildElements(VisualElement elements, VisualElement editor)
     {
-        var arithmetics = elements.Q<Foldout>("Arithmetics");
-
-        foreach (var tag in BinaryTagOperations.Arithmetics)
+        if (system != null)
         {
-            var block = new ExpressionElementSpawner(system[tag], editor);
-            arithmetics.Add(block);
-        }
+            var arithmetics = elements.Q<Foldout>("Arithmetics");
 
-        var comparison = elements.Q<Foldout>("Comparison");
+            foreach (var tag in BinaryTagOperations.Arithmetics)
+            {
+                var block = new ExpressionElementSpawner(system[tag], editor);
+                arithmetics.Add(block);
+            }
 
-        foreach (var tag in BinaryTagOperations.Comparison)
-        {
-            var block = new ExpressionElementSpawner(system[tag], editor);
-            comparison.Add(block);
+            var comparison = elements.Q<Foldout>("Comparison");
+
+            foreach (var tag in BinaryTagOperations.Comparison)
+            {
+                var block = new ExpressionElementSpawner(system[tag], editor);
+                comparison.Add(block);
+            }
         }
 
         var literal = elements.Q<Foldout>("LiteralExpressions");
@@ -184,134 +216,295 @@ public class ScriptEditorUI : MonoBehaviour
             var block = new CondStatementSpawner(type, editor);
             cfStmts.Add(block);
         }
+
+        var enemyCommands = EnsureEnemyCommandsFoldout(elements);
+        foreach (var command in Enum.GetValues(typeof(HackCommand))
+                     .Cast<HackCommand>())
+        {
+            if (command == HackCommand.None)
+            {
+                continue;
+            }
+
+            enemyCommands.Add(new EnemyCommandStatementSpawner(command, editor));
+        }
+    }
+
+    Foldout EnsureEnemyCommandsFoldout(VisualElement elements)
+    {
+        var existing = elements.Q<Foldout>("EnemyCommands");
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        var foldout = new Foldout
+        {
+            name = "EnemyCommands",
+            text = "Enemy Commands",
+            value = true
+        };
+
+        var scrollView = elements.Q<ScrollView>();
+        if (scrollView != null)
+        {
+            scrollView.Add(foldout);
+        }
+        else
+        {
+            elements.Add(foldout);
+        }
+
+        return foldout;
     }
 
     void BuildToolbar(VisualElement root)
     {
         resultLabel = root.Q<Label>("Result");
 
-
         var evalButton = root.Q<Button>("Execute");
-        evalButton.clicked += EvaluateSelected;
-    }
-
-    void BuildTestGraph(GraphRoot graph)
-    {
-        var controller = ExpressionGraphController.Instance;
-
-        var addSystem = new BinaryOperatorOverloadSystem<AdditionOperator>();
-        var leSystem = new BinaryOperatorOverloadSystem<LessOrEqualOperator>();
-
-        var n = new IntVariable("n");
-        var i = new IntVariable("i");
-
-        var assignI = new StatementBlockView(new AssignStatement(i), "Assign_i");
-        var assignN = new StatementBlockView(new AssignStatement(n), "Assign_n");
-        var const1a = new ExpressionBlockView(new NumeralExpression() { RawText = "1" }, "Num_1a");
-        var const5 = new ExpressionBlockView(new NumeralExpression() { RawText = "5" }, "Num_5");
-
-        var whileBlock = new StatementBlockView(new WhileStatement(), "While");
-        var iCondExpr = new ExpressionBlockView(new VariableExpression(i), "i_expr_cond");
-        var nCondExpr = new ExpressionBlockView(new VariableExpression(n), "n_expr_cond");
-        var leExpr = new ExpressionBlockView(new BinaryExpression(leSystem), "Le");
-
-        var printStmt = new StatementBlockView(new PrintStatement(), "Print");
-        var iPrintExpr = new ExpressionBlockView(new VariableExpression(i), "i_expr_print");
-
-        var assignI2 = new StatementBlockView(new AssignStatement(i), "Assign_i_inc");
-        var addExpr = new ExpressionBlockView(new BinaryExpression(addSystem), "Add");
-        var iIncExpr = new ExpressionBlockView(new VariableExpression(i), "i_expr_inc");
-        var const1b = new ExpressionBlockView(new NumeralExpression() { RawText = "1" }, "Num_1b");
-
-        graph.AddFreeBlock(assignI);
-        graph.AddFreeBlock(assignN);
-        graph.AddFreeBlock(const1a);
-        graph.AddFreeBlock(const5);
-
-        graph.AddFreeBlock(whileBlock);
-        graph.AddFreeBlock(iCondExpr);
-        graph.AddFreeBlock(nCondExpr);
-        graph.AddFreeBlock(leExpr);
-
-        graph.AddFreeBlock(printStmt);
-        graph.AddFreeBlock(iPrintExpr);
-
-        graph.AddFreeBlock(assignI2);
-        graph.AddFreeBlock(addExpr);
-        graph.AddFreeBlock(iIncExpr);
-        graph.AddFreeBlock(const1b);
-
-       
-        StmtSlotView FindSlot(StatementBlockView block, StmtSlotKind kind)
+        if (evalButton != null)
         {
-            foreach (var s in block.StmtSlots)
-            {
-                if (s.Kind == kind) return s;
-            }
-            throw new System.InvalidOperationException($"Slot {kind} not found on {block.DebugName}");
+            evalButton.clicked += ExecuteProgram;
         }
 
-        controller.SelectBlock(const1a);
-        controller.SelectSlot(assignI.ExprSlots[0]);
+        var toolbar = root.Q("Toolbar");
+        if (toolbar == null)
+        {
+            return;
+        }
 
-        controller.SelectBlock(const5);
-        controller.SelectSlot(assignN.ExprSlots[0]);
-
-        controller.SelectBlock(assignN);
-        controller.SelectSlot(FindSlot(assignI, StmtSlotKind.Next));
-
-        controller.SelectBlock(iCondExpr);
-        controller.SelectSlot(leExpr.Slots[0]);
-
-        controller.SelectBlock(nCondExpr);
-        controller.SelectSlot(leExpr.Slots[1]);
-
-        controller.SelectBlock(leExpr);
-        controller.SelectSlot(whileBlock.ExprSlots[0]);
-
-        controller.SelectBlock(iPrintExpr);
-        controller.SelectSlot(printStmt.ExprSlots[0]);
-
-        controller.SelectBlock(printStmt);
-        controller.SelectSlot(FindSlot(whileBlock, StmtSlotKind.Body));
-
-        controller.SelectBlock(assignI2);
-        controller.SelectSlot(FindSlot(printStmt, StmtSlotKind.Next));
-
-        controller.SelectBlock(iIncExpr);
-        controller.SelectSlot(addExpr.Slots[0]);
-
-        controller.SelectBlock(const1b);
-        controller.SelectSlot(addExpr.Slots[1]);
-
-        controller.SelectBlock(addExpr);
-        controller.SelectSlot(assignI2.ExprSlots[0]);
+        var cancelButton = root.Q<Button>("Cancel");
+        if (cancelButton == null)
+        {
+            cancelButton = new Button(CancelEditing)
+            {
+                name = "Cancel",
+                text = "Cancel"
+            };
+            cancelButton.style.width = 160;
+            toolbar.Add(cancelButton);
+        }
+        else
+        {
+            cancelButton.clicked += CancelEditing;
+        }
     }
 
-    async void EvaluateSelected()
+    void BuildProgramRoot()
+    {
+        if (graph == null)
+        {
+            return;
+        }
+
+        programRootStatement = new ProgramRootStatement();
+        programRootBlock = new StatementBlockView(programRootStatement, "ProgramRoot");
+        graph.AddFreeBlock(programRootBlock, new Vector2(32f, 32f));
+        programRootBlock.Pin();
+    }
+
+    void ResetProgramGraph()
+    {
+        if (graph == null)
+        {
+            return;
+        }
+
+        ExpressionGraphController.Instance.ClearSelection();
+        graph.Clear();
+        BuildProgramRoot();
+    }
+
+    public void OpenForTarget(EnemyHackController target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        boundTarget = target;
+        boundTarget.ClearCommands();
+        EnemyCommandScriptContext.Bind(boundTarget);
+        ResetProgramGraph();
+        SetEditorVisible(true);
+        PauseTimeForEditing();
+
+        if (resultLabel != null)
+        {
+            resultLabel.text = $"Target: {boundTarget.name}";
+        }
+    }
+
+    async void ExecuteProgram()
+    {
+        try
+        {
+            if (programRootStatement == null || programRootStatement.Body == null)
+            {
+                await EvaluateSelectedOrWarn();
+                return;
+            }
+
+            if (boundTarget != null)
+            {
+                if (!boundTarget.GetHackStatus().IsActive)
+                {
+                    throw new InvalidOperationException("The hacked enemy is no longer active.");
+                }
+
+                boundTarget.ClearCommands();
+                EnemyCommandScriptContext.Bind(boundTarget);
+            }
+
+            var result = await programRootStatement.ExecuteAsync();
+            if (resultLabel != null)
+            {
+                resultLabel.text = $"Program queued (control flow: {result.Kind})";
+            }
+
+            if (boundTarget != null)
+            {
+                CloseEditing(cancelHack: false, clearQueuedCommands: false);
+            }
+        }
+        catch (Exception exception)
+        {
+            boundTarget?.ClearCommands();
+            if (resultLabel != null)
+            {
+                resultLabel.text = $"Error: {exception.Message}";
+            }
+
+            Debug.LogWarning($"[{nameof(ScriptEditorUI)}] Program execution failed: {exception.Message}", this);
+        }
+    }
+
+    async Task EvaluateSelectedOrWarn()
     {
         var controller = ExpressionGraphController.Instance;
 
         if (controller.SelectedBlock == null)
         {
-            Debug.LogWarning("No block selected");
+            if (resultLabel != null)
+            {
+                resultLabel.text = "Program is empty";
+            }
+
+            Debug.LogWarning("No program or block selected");
             return;
         }
 
         if (controller.SelectedBlock is ExpressionBlockView exprBlock)
         {
             var result = await exprBlock.Expression.EvaluateAsync();
-            resultLabel.text = $"Result: {result}";
+            if (resultLabel != null)
+            {
+                resultLabel.text = $"Result: {result}";
+            }
+
             return;
         }
 
         if (controller.SelectedBlock is StatementBlockView stmtBlock)
         {
             var result = await stmtBlock.Statement.ExecuteAsync();
-            resultLabel.text = $"Statement executed (control flow: {result.Kind})";
+            if (resultLabel != null)
+            {
+                resultLabel.text = $"Statement executed (control flow: {result.Kind})";
+            }
+
             return;
         }
 
         Debug.LogWarning("Selected block is not evaluable");
+    }
+
+    void CancelEditing()
+    {
+        CloseEditing(cancelHack: true, clearQueuedCommands: true);
+    }
+
+    void CloseEditing(bool cancelHack, bool clearQueuedCommands)
+    {
+        EnemyHackController target = boundTarget;
+
+        if (clearQueuedCommands)
+        {
+            target?.ClearCommands();
+        }
+
+        if (cancelHack)
+        {
+            target?.TryCancelHack();
+        }
+
+        EnemyCommandScriptContext.Clear(target);
+        boundTarget = null;
+        RestoreTimeAfterEditing();
+        SetEditorVisible(false);
+    }
+
+    void SetEditorVisible(bool visible)
+    {
+        if (document == null)
+        {
+            return;
+        }
+
+        document.rootVisualElement.style.display = visible
+            ? DisplayStyle.Flex
+            : DisplayStyle.None;
+    }
+
+    void PauseTimeForEditing()
+    {
+        if (!pauseWhileEditing || timePausedForEditing)
+        {
+            return;
+        }
+
+        previousTimeScale = Time.timeScale;
+        Time.timeScale = 0f;
+        timePausedForEditing = true;
+    }
+
+    void RestoreTimeAfterEditing()
+    {
+        if (!timePausedForEditing)
+        {
+            return;
+        }
+
+        Time.timeScale = previousTimeScale;
+        timePausedForEditing = false;
+    }
+
+    void SubscribeToHackEvents()
+    {
+        if (playerInteractor == null && autoFindPlayerInteractor)
+        {
+            playerInteractor = FindObjectOfType<PlayerInteractor>();
+        }
+
+        if (playerInteractor == null || subscribedInteractor == playerInteractor)
+        {
+            return;
+        }
+
+        UnsubscribeFromHackEvents();
+        subscribedInteractor = playerInteractor;
+        subscribedInteractor.HackCommandMenuRequested += OpenForTarget;
+    }
+
+    void UnsubscribeFromHackEvents()
+    {
+        if (subscribedInteractor == null)
+        {
+            return;
+        }
+
+        subscribedInteractor.HackCommandMenuRequested -= OpenForTarget;
+        subscribedInteractor = null;
     }
 }

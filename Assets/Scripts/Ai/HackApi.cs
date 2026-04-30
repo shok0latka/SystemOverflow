@@ -9,22 +9,22 @@ public interface IHackable
     void ClearAttemptProgress();
 }
 
-public interface IHackCommandSink
-{
-    bool TryMoveForward();
-    bool TryMoveLeft();
-    bool TryMoveRight();
-    bool TryRotateLeft();
-    bool TryRotateRight();
-    bool TryInteract();
-    void ClearCommand();
-}
-
 public enum HackPhase
 {
     Idle,
     Attempting,
     Active
+}
+
+public enum HackCommand
+{
+    None,
+    MoveForward,
+    MoveLeft,
+    MoveRight,
+    RotateLeft,
+    RotateRight,
+    Interact
 }
 
 public enum HackFailureReason

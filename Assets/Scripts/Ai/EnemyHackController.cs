@@ -1,26 +1,20 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
+public class EnemyHackController : MonoBehaviour, IHackable
 {
     private const float MinimumVisibleProgress = 0f;
     private const float MinimumHackDuration = 0.2f;
-
-    public enum HackCommand
-    {
-        None,
-        MoveForward,
-        MoveLeft,
-        MoveRight,
-        RotateLeft,
-        RotateRight,
-        Interact
-    }
+    private const float MinimumCommandStepDuration = 0.05f;
+    private const int MinimumQueuedCommands = 1;
 
     [SerializeField] private EnemyHackProgressIndicator progressIndicator;
     [SerializeField] private EnemyHackCooldownIndicator cooldownIndicator;
     [SerializeField] private Vector3 indicatorOffset = new Vector3(0f, 1.75f, 0f);
     [SerializeField] private float defaultDuration = 40f;
+    [SerializeField] private int maxQueuedCommands = 24;
+    [SerializeField] private float commandStepDuration = 0.35f;
 
     private EnemyAI2D _owner;
     private bool _isActive;
@@ -28,7 +22,11 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
     private float _timeRemaining;
     private bool _hasAttemptProgress;
     private float _attemptProgress;
-    private HackCommand _pendingCommand;
+    private readonly Queue<HackCommand> _queuedCommands = new();
+
+    public int QueuedCommandCount => _queuedCommands.Count;
+    public int MaxQueuedCommands => maxQueuedCommands;
+    public float CommandStepDuration => commandStepDuration;
 
     private void Awake()
     {
@@ -148,34 +146,44 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         _attemptProgress = 0f;
     }
 
-    public bool TryMoveForward() => TrySetCommand(HackCommand.MoveForward);
-
-    public bool TryMoveLeft() => TrySetCommand(HackCommand.MoveLeft);
-
-    public bool TryMoveRight() => TrySetCommand(HackCommand.MoveRight);
-
-    public bool TryRotateLeft() => TrySetCommand(HackCommand.RotateLeft);
-
-    public bool TryRotateRight() => TrySetCommand(HackCommand.RotateRight);
-
-    public bool TryInteract() => TrySetCommand(HackCommand.Interact);
-
-    public void ClearCommand()
+    public bool TryEnqueueCommand(HackCommand command)
     {
-        _pendingCommand = HackCommand.None;
-    }
-
-    public HackCommand ConsumeCommand()
-    {
-        if (!_isActive)
+        if (!CanAcceptCommands() || command == HackCommand.None)
         {
-            ClearCommand();
-            return HackCommand.None;
+            return false;
         }
 
-        HackCommand command = _pendingCommand;
-        ClearCommand();
-        return command;
+        if (_queuedCommands.Count >= maxQueuedCommands)
+        {
+            return false;
+        }
+
+        _queuedCommands.Enqueue(command);
+        return true;
+    }
+
+    public bool TryDequeueCommand(out HackCommand command)
+    {
+        if (!CanAcceptCommands())
+        {
+            ClearCommands();
+            command = HackCommand.None;
+            return false;
+        }
+
+        if (_queuedCommands.Count == 0)
+        {
+            command = HackCommand.None;
+            return false;
+        }
+
+        command = _queuedCommands.Dequeue();
+        return true;
+    }
+
+    public void ClearCommands()
+    {
+        _queuedCommands.Clear();
     }
 
     private void RefreshPresentation()
@@ -217,7 +225,7 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         _activeDuration = Mathf.Max(MinimumHackDuration, duration);
         _timeRemaining = Mathf.Clamp(timeRemaining, 0f, _activeDuration);
         ClearAttemptProgress();
-        ClearCommand();
+        ClearCommands();
     }
 
     private void EndActiveHack()
@@ -226,7 +234,7 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         _activeDuration = 0f;
         _timeRemaining = 0f;
         ClearAttemptProgress();
-        ClearCommand();
+        ClearCommands();
     }
 
     private void TickActiveHack(float deltaTime)
@@ -289,17 +297,6 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         return _isActive;
     }
 
-    private bool TrySetCommand(HackCommand command)
-    {
-        if (!CanAcceptCommands())
-        {
-            return false;
-        }
-
-        _pendingCommand = command;
-        return true;
-    }
-
     private bool CanBeginHack()
     {
         if (_isActive)
@@ -325,6 +322,8 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
     private void NormalizeConfig()
     {
         defaultDuration = Mathf.Max(MinimumHackDuration, defaultDuration);
+        maxQueuedCommands = Mathf.Max(MinimumQueuedCommands, maxQueuedCommands);
+        commandStepDuration = Mathf.Max(MinimumCommandStepDuration, commandStepDuration);
     }
 
     private EnemyAI2D ResolveOwner()
