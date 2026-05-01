@@ -6,7 +6,6 @@ using Script.Core.Expressions.LiteralExpressions.Implementations;
 using Script.Core.Expressions.BinaryExpressions;
 using Script.Core.Expressions.BinaryExpressions.Arithmetic;
 using Script.Core.Expressions.BinaryExpressions.Comparison;
-
 using Script.Core.Statements;
 using Script.Core.Variables.Implementations;
 using Script.Core.Utils;
@@ -15,6 +14,9 @@ using System.Linq;
 using System.Collections.Generic;
 using Script.Core.Variables;
 using Script.Core.Types;
+using Script.UI.Controllers;
+using Script.UI.Spawners;
+using Script.UI.Views;
 
 public class ScriptEditorUI : MonoBehaviour
 {
