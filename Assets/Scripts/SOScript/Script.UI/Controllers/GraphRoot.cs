@@ -3,6 +3,7 @@
 using UnityEngine.UIElements;
 using UnityEngine;
 using Script.UI.Views;
+using System;
 
 namespace Script.UI.Controllers 
 {
@@ -12,6 +13,11 @@ namespace Script.UI.Controllers
 
         public GraphRoot()
         {
+            if (Instance is not null)
+            {
+                throw new InvalidOperationException($"Second call of {nameof(GraphRoot)} constructor");    
+            }
+
             Instance = this;
             Debug.Log("[GraphRoot] GraphRoot created");
 

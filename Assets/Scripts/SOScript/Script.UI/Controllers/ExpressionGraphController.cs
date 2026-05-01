@@ -91,8 +91,7 @@ namespace Script.UI.Controllers
         {
             Debug.Log($"[GraphController] DetachExpressionBlock -> {block.DebugName}");
 
-            if (block.ParentSlot != null)
-                block.ParentSlot.ClearChild();
+            block.ParentSlot?.ClearChild();
 
             GraphRoot.Instance?.AddFreeBlock(block);
         }
@@ -101,8 +100,7 @@ namespace Script.UI.Controllers
         {
             Debug.Log($"[GraphController] DetachStatementBlock -> {block.DebugName}");
 
-            if (block.ParentSlot != null)
-                block.ParentSlot.ClearChild();
+            block.ParentSlot?.ClearChild();
 
             GraphRoot.Instance?.AddFreeBlock(block);
         }

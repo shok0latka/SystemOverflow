@@ -135,7 +135,7 @@
     border-bottom-width: 5px;
     border-left-width: 5px;
     transform-origin: left top;
-    background-image: url("project://database/Assets/UI%20Test/editor-tile.png?fileID=21300000&guid=01553528fd169ff40a04e28256d21783&type=3#editor-tile");
+    background-image: url("project://database/Assets/Scripts/SOScript/Script.UI/editor-tile.png?fileID=21300000&guid=01553528fd169ff40a04e28256d21783&type=3#editor-tile");
     background-repeat: repeat;
     background-size: auto;
 }
@@ -155,7 +155,15 @@
     width: auto;
 }
 
-.unity-base-field__input
-{
+.unity-base-field__input {
     margin-left: auto;
+}
+
+.toolbar-button {
+    width: 200px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    margin-left: 20px;
 }
