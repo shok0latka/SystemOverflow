@@ -12,6 +12,9 @@ using Script.Core.Variables.Implementations;
 using Script.Core.Utils;
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using Script.Core.Variables;
+using Script.Core.Types;
 
 public class ScriptEditorUI : MonoBehaviour
 {
@@ -27,6 +30,9 @@ public class ScriptEditorUI : MonoBehaviour
     float minZoom;
     float zoom = 1f;
     float maxZoom = 2f;
+
+    List<Variable> scope = new();
+    Foldout varList;
     
 
     void Start()
@@ -189,6 +195,44 @@ public class ScriptEditorUI : MonoBehaviour
             var block = new CondStatementSpawner(type, editor);
             cfStmts.Add(block);
         }
+
+        varList = elements.Q<Foldout>("VarList");
+        Foldout create = elements.Q<Foldout>("VarCreate");
+
+        List<string> varTypesStr = new() {"String", "Float", "Int", "Bool"};
+        List<ScriptType> varTypesEnum = new() {ScriptType.String, ScriptType.Float, ScriptType.Integer, ScriptType.Boolean};
+
+        for (int i = 0; i < Math.Min(varTypesStr.Count, varTypesEnum.Count); i++)
+        {
+            var typeName = varTypesStr[i];
+            var type = varTypesEnum[i];
+            var container = create.Q($"{typeName}VarCreation");
+            if (container is not null)
+            {
+                var textField = container.Q<TextField>();
+                var button = container.Q<Button>();
+
+                button.clicked += () =>
+                {
+                    var varName = textField.value;
+                    var var = ScriptTypeOperations.CreateVariable(type, varName); // TODO exception handling
+
+                    AddVariable(var, editor);
+                };
+            }
+            else
+            {
+                Debug.Log($"Missing container for {typeName} variables");
+            }
+        }
+    }
+
+    void AddVariable(Variable var, VisualElement editor)
+    {
+        Debug.Log($"Create Variable(type={var.Type}, name={var.Name})");
+        scope.Add(var);
+        var section = new VarSpawnSection(var, editor);
+        varList.Add(section);
     }
 
     void BuildToolbar(VisualElement root)

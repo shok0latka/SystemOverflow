@@ -141,7 +141,7 @@ public class ExpressionBlockView : VisualElement, IExpressionSlotHost
 
     void BuildVariable(VariableExpression expr)
     {
-        var label = new Label(expr.Var.Name);
+        var label = new Label($"{expr.Var.Name}: {ScriptTypeOperations.GetTypeText(expr.Type)}");
         label.AddToClassList("expr-variable");
 
         Add(label);

@@ -139,3 +139,23 @@
     background-repeat: repeat;
     background-size: auto;
 }
+
+.var-creation {
+    flex-grow: 1;
+    flex-direction: row;
+    align-self: stretch;
+    margin-top: 4px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    margin-left: 4px;
+}
+
+.unity-foldout .unity-base-field__label {
+    min-width: auto;
+    width: auto;
+}
+
+.unity-base-field__input
+{
+    margin-left: auto;
+}
