@@ -1,15 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor.SearchService;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class PC : Interactable
 {
-    public string _scratchScene = "SO Script UI";
+    [TextArea(3, 10)]
+    public string terminalMessage = "Добро пожаловать в консоль System Overflow. Взлом роботов - ваша главная задача. Будьте осторожны.";
+    
     public override void Interact()
     {
-        Debug.Log("[b[b]]");
-        SceneManager.LoadScene(_scratchScene);
-    } 
+        Debug.Log("Взаимодействие с терминалом");
+        DialogManager.Instance.ShowDialog(terminalMessage);
+    }
 }

@@ -1,5 +1,4 @@
 using System;
-using UnityEditor.UI;
 using UnityEngine;
 
 public class Checkpoint : MonoBehaviour
@@ -13,13 +12,8 @@ public class Checkpoint : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             ActivateCheckpoint();
-            Destroy();
+            Destroy(gameObject);
         }
-    }
-
-    private void Destroy()
-    {
-        throw new NotImplementedException();
     }
 
     private void ActivateCheckpoint()
