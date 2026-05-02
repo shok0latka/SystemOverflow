@@ -16,6 +16,11 @@ namespace Script.Core.Variables
 
         protected Variable(ScriptType type, string name)
         {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("The variable name must not be empty");
+            }
+            
             Type = type;
             Name = name;
         }

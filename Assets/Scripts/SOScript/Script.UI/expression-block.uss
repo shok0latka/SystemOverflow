@@ -111,6 +111,12 @@
 
 .unity-foldout > .expr-block {
     align-self: flex-start;
+    margin: 4px;
+}
+
+.unity-foldout > .stmt-block {
+    align-self: flex-start;
+    margin: 4px;
 }
 
 .editor-field {
@@ -129,7 +135,70 @@
     border-bottom-width: 5px;
     border-left-width: 5px;
     transform-origin: left top;
-    background-image: url("project://database/Assets/UI%20Test/editor-tile.png?fileID=21300000&guid=01553528fd169ff40a04e28256d21783&type=3#editor-tile");
+    background-image: url("project://database/Assets/Scripts/SOScript/Script.UI/editor-tile.png?fileID=21300000&guid=01553528fd169ff40a04e28256d21783&type=3#editor-tile");
     background-repeat: repeat;
     background-size: auto;
+}
+
+.var-creation {
+    flex-grow: 1;
+    flex-direction: row;
+    align-self: stretch;
+    margin-top: 4px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    margin-left: 4px;
+}
+
+.unity-foldout .unity-base-field__label {
+    min-width: auto;
+    width: auto;
+}
+
+.unity-base-field__input {
+    margin-left: auto;
+}
+
+.toolbar-button {
+    width: 200px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    margin-left: 20px;
+}
+
+.ui-console {
+    position: absolute;
+    font-size: 24px;
+    top: 20px;
+    right: 20px;
+    border-left-color: rgb(0, 0, 0);
+    border-right-color: rgb(0, 0, 0);
+    border-top-color: rgb(0, 0, 0);
+    border-bottom-color: rgb(0, 0, 0);
+    border-top-width: 2px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+    border-left-width: 2px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    width: 20%;
+    min-width: 200px;
+    max-width: 400px;
+    background-color: rgb(161, 161, 161);
+}
+
+.ui-console-error {
+    color: rgb(214, 0, 0);
+}
+
+.ui-console-info {
+    color: rgb(0, 0, 0);
+}
+
+.ui-console-warning {
+    color: rgb(255, 208, 0);
 }

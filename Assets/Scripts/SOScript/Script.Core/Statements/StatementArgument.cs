@@ -23,7 +23,7 @@ namespace Script.Core.Statements
                 var newType = value?.Type ?? ScriptType.Undefined;
                 if (!ValidateType(newType))
                 {
-                    throw new ArgumentException($"Incorrect argument type {newType}");
+                    throw new ArgumentException($"Incorrect argument type {newType} for parameter '{Name}'");
                 }
                 attached = value;
                 if (attached is not null)
@@ -54,11 +54,11 @@ namespace Script.Core.Statements
         {
             if (Attached is null)
             {
-                throw new ArgumentNullException(nameof(Attached));
+                throw new ArgumentNullException(nameof(Attached), $"Required parameter '{Name}' is empty");
             }
             if (!ValidateType(Attached.Type, true))
             {
-                throw new ArgumentException($"Incorrect argument type {Attached.Type}");
+                throw new ArgumentException($"Incorrect argument type {Attached.Type} for parameter '{Name}'");
             }
 
             return Attached.Evaluate();
@@ -68,11 +68,11 @@ namespace Script.Core.Statements
         {
             if (Attached is null)
             {
-                throw new ArgumentNullException(nameof(Attached));
+                throw new ArgumentNullException(nameof(Attached), $"Required parameter '{Name}' is empty");
             }
             if (!ValidateType(Attached.Type, true))
             {
-                throw new ArgumentException($"Incorrect argument type {Attached.Type}");
+                throw new ArgumentException($"Incorrect argument type {Attached.Type} for parameter '{Name}'");
             }
 
             return Attached.EvaluateAsync();
