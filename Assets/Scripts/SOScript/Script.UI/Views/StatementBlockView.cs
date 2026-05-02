@@ -44,11 +44,6 @@ namespace Script.UI.Views
             BuildExpressionArguments();
         }
 
-        public StatementBlockView(PrintStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
-        {
-            BuildNextSlot();
-        }
-
         public StatementBlockView(AssignStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
         {
             BuildNextSlot();
@@ -69,14 +64,14 @@ namespace Script.UI.Views
             BuildNextSlot();
         }
 
-        void BuildTitle(string text)
+        protected void BuildTitle(string text)
         {
             var title = new Label(text);
             title.AddToClassList("stmt-title");
             content.Add(title);
         }
 
-        void BuildExpressionArguments()
+        protected void BuildExpressionArguments()
         {
             for (int i = 0; i < Statement.Arguments.Count; i++)
             {
@@ -92,7 +87,7 @@ namespace Script.UI.Views
             }
         }
 
-        void BuildStatementSlot(string labelText, StmtSlotKind kind)
+        protected void BuildStatementSlot(string labelText, StmtSlotKind kind)
         {
             var label = new Label(labelText);
             label.AddToClassList("stmt-arg-label");
@@ -103,7 +98,7 @@ namespace Script.UI.Views
             content.Add(slot);
         }
 
-        void BuildNextSlot()
+        protected void BuildNextSlot()
         {
             var label = new Label("Next:");
             label.AddToClassList("stmt-arg-label");

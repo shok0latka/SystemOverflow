@@ -1,13 +1,5 @@
 using UnityEngine;
 using UnityEngine.UIElements;
-
-using Script.Core.Expressions;
-using Script.Core.Expressions.LiteralExpressions.Implementations;
-using Script.Core.Expressions.BinaryExpressions;
-using Script.Core.Expressions.BinaryExpressions.Arithmetic;
-using Script.Core.Expressions.BinaryExpressions.Comparison;
-using Script.Core.Statements;
-using Script.Core.Variables.Implementations;
 using Script.Core.Utils;
 using System;
 using System.Linq;
@@ -35,6 +27,8 @@ public class ScriptEditorUI : MonoBehaviour
 
     List<Variable> scope = new();
     Foldout varList;
+
+    UIConsole console;
     
 
     void Start()
@@ -44,13 +38,26 @@ public class ScriptEditorUI : MonoBehaviour
         if (style != null)
             root.styleSheets.Add(style);
 
+        root.style.display = DisplayStyle.None;
         var elements = root.Q("Elements");
         var editor = root.Q("Editor");
 
         BuildEditorField(editor);
+        BuildConsole(editor);
         BuildElements(elements, editor);
-
         BuildToolbar(root);
+
+        TestConsole();
+    }
+
+    void TestConsole()
+    {
+        List<MessageType> types = Enum.GetValues(typeof(MessageType)).Cast<MessageType>().ToList();
+
+        for (int i = 0; i < 15; i++)
+        {
+            console.Write($"i = {i}", types[i % types.Count]);
+        }
     }
 
     void BuildEditorField(VisualElement editor)
@@ -227,6 +234,11 @@ public class ScriptEditorUI : MonoBehaviour
                 Debug.Log($"Missing container for {typeName} variables");
             }
         }
+
+        var messaging = elements.Q<Foldout>("Messages");
+        messaging.Add(new PrintStatementBlockSpawner(console, MessageType.Info, editor));
+        messaging.Add(new PrintStatementBlockSpawner(console, MessageType.Warning, editor));
+        messaging.Add(new PrintStatementBlockSpawner(console, MessageType.Error, editor));
     }
 
     void AddVariable(Variable var, VisualElement editor)
@@ -246,6 +258,12 @@ public class ScriptEditorUI : MonoBehaviour
 
         var deleteButton = root.Q<Button>("DeleteSelection");
         deleteButton.clicked += DeleteSelected;
+    }
+
+    void BuildConsole(VisualElement editor)
+    {
+        console = new UIConsole();
+        editor.Add(console);
     }
 
     void DeleteSelected()
@@ -300,5 +318,15 @@ public class ScriptEditorUI : MonoBehaviour
         }
 
         Debug.LogWarning("Selected block is not evaluable");
+    }
+
+    public void OnEnter()
+    {
+        document.rootVisualElement.style.display = DisplayStyle.Flex;
+    }
+
+    public void OnExit()
+    {
+        document.rootVisualElement.style.display = DisplayStyle.None;
     }
 }

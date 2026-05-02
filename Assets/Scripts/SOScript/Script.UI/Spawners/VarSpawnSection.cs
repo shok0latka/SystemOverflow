@@ -64,6 +64,7 @@ namespace Script.UI.Spawners
         {
             var field = editor.Q("Field");
             var graph = field.Q<GraphRoot>();
+            AddToClassList("stmt-block");
 
             RegisterCallback<ClickEvent>(evt =>
             {
