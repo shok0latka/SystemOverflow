@@ -49,6 +49,11 @@ namespace Script.UI.Views
             BuildNextSlot();
         }
 
+        public StatementBlockView(EnemyCommandStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
+        {
+            BuildNextSlot();
+        }
+
         public StatementBlockView(IfStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
         {
             BuildStatementSlot("Do:", StmtSlotKind.Do);

@@ -3,7 +3,6 @@
 using UnityEngine.UIElements;
 using UnityEngine;
 using Script.UI.Views;
-using System;
 
 namespace Script.UI.Controllers 
 {
@@ -13,16 +12,20 @@ namespace Script.UI.Controllers
 
         public GraphRoot()
         {
-            if (Instance is not null)
-            {
-                throw new InvalidOperationException($"Second call of {nameof(GraphRoot)} constructor");    
-            }
-
             Instance = this;
+            ExpressionGraphController.Instance.ClearSelection();
             Debug.Log("[GraphRoot] GraphRoot created");
 
             style.position = Position.Relative;
             style.flexGrow = 1;
+
+            RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                if (ReferenceEquals(Instance, this))
+                {
+                    Instance = null;
+                }
+            });
 
             RegisterCallback<ClickEvent>(evt =>
             {

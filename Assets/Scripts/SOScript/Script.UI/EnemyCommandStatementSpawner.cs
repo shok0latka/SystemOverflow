@@ -1,27 +1,32 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using Script.UI.Controllers;
+using Script.UI.Views;
 
-public class EnemyCommandStatementSpawner : VisualElement
+namespace Script.UI.Spawners
 {
-    public EnemyCommandStatementSpawner(HackCommand command, VisualElement editor)
+    public class EnemyCommandStatementSpawner : VisualElement
     {
-        var field = editor.Q("Field");
-        var graph = field.Q<GraphRoot>();
-
-        AddToClassList("stmt-block");
-        Add(new Label(EnemyCommandStatement.GetDisplayName(command)));
-
-        RegisterCallback<ClickEvent>(evt =>
+        public EnemyCommandStatementSpawner(HackCommand command, VisualElement editor)
         {
-            evt.StopPropagation();
+            var field = editor.Q("Field");
+            var graph = field.Q<GraphRoot>();
 
-            var block = new StatementBlockView(new EnemyCommandStatement(command));
-            var editorCenter = new Vector2(
-                editor.layout.width * 0.5f,
-                editor.layout.height * 0.5f);
-            var centerInField = editor.ChangeCoordinatesTo(field, editorCenter);
+            AddToClassList("stmt-block");
+            Add(new Label(EnemyCommandStatement.GetDisplayName(command)));
 
-            graph.AddFreeBlock(block, centerInField);
-        });
+            RegisterCallback<ClickEvent>(evt =>
+            {
+                evt.StopPropagation();
+
+                var block = new StatementBlockView(new EnemyCommandStatement(command));
+                var editorCenter = new Vector2(
+                    editor.layout.width * 0.5f,
+                    editor.layout.height * 0.5f);
+                var centerInField = editor.ChangeCoordinatesTo(field, editorCenter);
+
+                graph.AddFreeBlock(block, centerInField);
+            });
+        }
     }
 }

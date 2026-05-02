@@ -134,7 +134,7 @@ namespace Script.UI.Controllers
             ClearSelection();
         }
 
-        void ClearSelection()
+        public void ClearSelection()
         {
             SelectedSlot?.RemoveFromClassList("expr-selected");
             SelectedBlock?.RemoveFromClassList("expr-selected");

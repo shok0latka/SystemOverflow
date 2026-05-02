@@ -15,11 +15,19 @@ public class ScriptEditorUI : MonoBehaviour
     [SerializeField] UIDocument document;
     [SerializeField] StyleSheet style;
     [SerializeField] OverloadSystem system;
+    [SerializeField] bool openOnStart;
+    [SerializeField] bool pauseWhileEditing = true;
+    [SerializeField] PlayerInteractor playerInteractor;
+    [SerializeField] bool autoFindPlayerInteractor = true;
 
     Label resultLabel;
     Vector3 startMouse;
     float startLeft;
     float startTop;
+    EnemyHackController boundTarget;
+    PlayerInteractor subscribedInteractor;
+    float previousTimeScale = 1f;
+    bool timePausedForEditing;
 
     float minZoom;
     float zoom = 1f;
@@ -36,7 +44,7 @@ public class ScriptEditorUI : MonoBehaviour
         if (style != null)
             root.styleSheets.Add(style);
 
-        root.style.display = DisplayStyle.None;
+        SetEditorVisible(openOnStart);
         var elements = root.Q("Elements");
         var editor = root.Q("Editor");
 
@@ -44,8 +52,15 @@ public class ScriptEditorUI : MonoBehaviour
         BuildConsole(editor);
         BuildElements(elements, editor);
         BuildToolbar(root);
+        SubscribeToHackEvents();
 
         // TestConsole();
+    }
+
+    void OnDestroy()
+    {
+        UnsubscribeFromHackEvents();
+        CloseEditor(clearQueuedCommands: false, cancelHack: false);
     }
 
     void TestConsole()
@@ -203,6 +218,17 @@ public class ScriptEditorUI : MonoBehaviour
             cfStmts.Add(block);
         }
 
+        var enemyCommands = GetOrCreateEnemyCommandsFoldout(elements);
+        foreach (var command in Enum.GetValues(typeof(HackCommand)).Cast<HackCommand>())
+        {
+            if (command == HackCommand.None)
+            {
+                continue;
+            }
+
+            enemyCommands.Add(new EnemyCommandStatementSpawner(command, editor));
+        }
+
         varList = elements.Q<Foldout>("VarList");
         Foldout create = elements.Q<Foldout>("VarCreate");
 
@@ -246,6 +272,35 @@ public class ScriptEditorUI : MonoBehaviour
         messaging.Add(new PrintStatementBlockSpawner(UIConsole.Instance, MessageType.Error, editor));
     }
 
+    Foldout GetOrCreateEnemyCommandsFoldout(VisualElement elements)
+    {
+        var enemyCommands = elements.Q<Foldout>("EnemyCommands");
+        if (enemyCommands != null)
+        {
+            return enemyCommands;
+        }
+
+        enemyCommands = new Foldout
+        {
+            name = "EnemyCommands",
+            text = "Enemy Commands",
+            value = true
+        };
+        enemyCommands.style.marginRight = 20;
+
+        var scrollView = elements.Q<ScrollView>();
+        if (scrollView != null)
+        {
+            scrollView.Add(enemyCommands);
+        }
+        else
+        {
+            elements.Add(enemyCommands);
+        }
+
+        return enemyCommands;
+    }
+
     void AddVariable(Variable var, VisualElement editor)
     {
         Debug.Log($"Create Variable(type={var.Type}, name={var.Name})");
@@ -260,6 +315,12 @@ public class ScriptEditorUI : MonoBehaviour
 
         var evalButton = root.Q<Button>("Execute");
         evalButton.clicked += EvaluateSelected;
+
+        var cancelButton = root.Q<Button>("Cancel");
+        if (cancelButton != null)
+        {
+            cancelButton.clicked += CancelEditor;
+        }
 
         var deleteButton = root.Q<Button>("DeleteSelection");
         deleteButton.clicked += DeleteSelected;
@@ -327,6 +388,10 @@ public class ScriptEditorUI : MonoBehaviour
             {
                 var result = await stmtBlock.Statement.ExecuteAsync();
                 resultLabel.text = $"Statement executed (control flow: {result.Kind})";
+                if (boundTarget != null)
+                {
+                    CloseEditor(clearQueuedCommands: false, cancelHack: false);
+                }
             }
             catch (Exception e)
             {
@@ -340,11 +405,131 @@ public class ScriptEditorUI : MonoBehaviour
 
     public void OnEnter()
     {
-        document.rootVisualElement.style.display = DisplayStyle.Flex;
+        SetEditorVisible(true);
     }
 
     public void OnExit()
     {
-        document.rootVisualElement.style.display = DisplayStyle.None;
+        CloseEditor(clearQueuedCommands: false, cancelHack: false);
+    }
+
+    void SubscribeToHackEvents()
+    {
+        if (subscribedInteractor != null)
+        {
+            return;
+        }
+
+        if (playerInteractor == null && autoFindPlayerInteractor)
+        {
+            playerInteractor = FindFirstObjectByType<PlayerInteractor>();
+        }
+
+        if (playerInteractor == null)
+        {
+            Debug.LogWarning("ScriptEditorUI could not find PlayerInteractor; enemy hack menu requests will not open the editor.", this);
+            return;
+        }
+
+        subscribedInteractor = playerInteractor;
+        subscribedInteractor.HackCommandMenuRequested += OpenForHackTarget;
+    }
+
+    void UnsubscribeFromHackEvents()
+    {
+        if (subscribedInteractor == null)
+        {
+            return;
+        }
+
+        subscribedInteractor.HackCommandMenuRequested -= OpenForHackTarget;
+        subscribedInteractor = null;
+    }
+
+    void OpenForHackTarget(EnemyHackController target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (!target.GetHackStatus().IsActive)
+        {
+            UIConsole.Instance.WriteWarning("Enemy is no longer hacked.");
+            return;
+        }
+
+        boundTarget = target;
+        boundTarget.ClearCommands();
+        EnemyCommandScriptContext.Bind(boundTarget);
+        PauseGameplay();
+        SetEditorVisible(true);
+        resultLabel.text = $"Result: Target {boundTarget.name}";
+        UIConsole.Instance.Write($"Command target: {boundTarget.name}", MessageType.Info);
+    }
+
+    void CancelEditor()
+    {
+        CloseEditor(clearQueuedCommands: true, cancelHack: true);
+    }
+
+    void CloseEditor(bool clearQueuedCommands, bool cancelHack)
+    {
+        if (clearQueuedCommands)
+        {
+            boundTarget?.ClearCommands();
+        }
+
+        if (cancelHack)
+        {
+            boundTarget?.TryCancelHack();
+        }
+
+        if (boundTarget != null)
+        {
+            EnemyCommandScriptContext.Clear(boundTarget);
+        }
+        else if (!EnemyCommandScriptContext.HasTarget)
+        {
+            EnemyCommandScriptContext.Clear();
+        }
+
+        boundTarget = null;
+        RestoreGameplay();
+        SetEditorVisible(false);
+        ExpressionGraphController.Instance.ClearSelection();
+    }
+
+    void PauseGameplay()
+    {
+        if (!pauseWhileEditing || timePausedForEditing)
+        {
+            return;
+        }
+
+        previousTimeScale = Time.timeScale;
+        Time.timeScale = 0f;
+        timePausedForEditing = true;
+    }
+
+    void RestoreGameplay()
+    {
+        if (!timePausedForEditing)
+        {
+            return;
+        }
+
+        Time.timeScale = previousTimeScale;
+        timePausedForEditing = false;
+    }
+
+    void SetEditorVisible(bool visible)
+    {
+        if (document == null || document.rootVisualElement == null)
+        {
+            return;
+        }
+
+        document.rootVisualElement.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
     }
 }
