@@ -1,15 +1,20 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
+public class EnemyHackController : MonoBehaviour, IHackable
 {
     private const float MinimumVisibleProgress = 0f;
     private const float MinimumHackDuration = 0.2f;
+    private const float MinimumCommandStepDuration = 0.05f;
+    private const int MinimumQueuedCommands = 1;
 
     [SerializeField] private EnemyHackProgressIndicator progressIndicator;
     [SerializeField] private EnemyHackCooldownIndicator cooldownIndicator;
     [SerializeField] private Vector3 indicatorOffset = new Vector3(0f, 1.75f, 0f);
     [SerializeField] private float defaultDuration = 40f;
+    [SerializeField] private int maxQueuedCommands = 24;
+    [SerializeField] private float commandStepDuration = 0.35f;
 
     private EnemyAI2D _owner;
     private bool _isActive;
@@ -17,9 +22,11 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
     private float _timeRemaining;
     private bool _hasAttemptProgress;
     private float _attemptProgress;
-    private bool _hasControlIntent;
-    private HackControlIntent _controlIntent;
-    private bool _interactRequested;
+    private readonly Queue<HackCommand> _queuedCommands = new();
+
+    public int QueuedCommandCount => _queuedCommands.Count;
+    public int MaxQueuedCommands => maxQueuedCommands;
+    public float CommandStepDuration => commandStepDuration;
 
     private void Awake()
     {
@@ -139,42 +146,44 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         _attemptProgress = 0f;
     }
 
-    public bool TrySetControlIntent(HackControlIntent intent)
+    public bool TryEnqueueCommand(HackCommand command)
     {
-        if (!CanAcceptCommands())
+        if (!CanAcceptCommands() || command == HackCommand.None)
         {
             return false;
         }
 
-        _controlIntent = HackControlIntent.Clamp(intent);
-        _hasControlIntent = true;
-        return true;
-    }
-
-    public bool TryRequestInteract()
-    {
-        if (!CanAcceptCommands())
+        if (_queuedCommands.Count >= maxQueuedCommands)
         {
             return false;
         }
 
-        _interactRequested = true;
+        _queuedCommands.Enqueue(command);
         return true;
     }
 
-    public void ClearControlIntent()
+    public bool TryDequeueCommand(out HackCommand command)
     {
-        bool hasStoredCommand = _hasControlIntent ||
-            _interactRequested ||
-            HasAnyInput(_controlIntent);
-        if (!hasStoredCommand)
+        if (!CanAcceptCommands())
         {
-            return;
+            ClearCommands();
+            command = HackCommand.None;
+            return false;
         }
 
-        _hasControlIntent = false;
-        _controlIntent = default;
-        _interactRequested = false;
+        if (_queuedCommands.Count == 0)
+        {
+            command = HackCommand.None;
+            return false;
+        }
+
+        command = _queuedCommands.Dequeue();
+        return true;
+    }
+
+    public void ClearCommands()
+    {
+        _queuedCommands.Clear();
     }
 
     private void RefreshPresentation()
@@ -216,7 +225,7 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         _activeDuration = Mathf.Max(MinimumHackDuration, duration);
         _timeRemaining = Mathf.Clamp(timeRemaining, 0f, _activeDuration);
         ClearAttemptProgress();
-        ClearControlIntent();
+        ClearCommands();
     }
 
     private void EndActiveHack()
@@ -225,7 +234,7 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         _activeDuration = 0f;
         _timeRemaining = 0f;
         ClearAttemptProgress();
-        ClearControlIntent();
+        ClearCommands();
     }
 
     private void TickActiveHack(float deltaTime)
@@ -288,13 +297,6 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
         return _isActive;
     }
 
-    private static bool HasAnyInput(HackControlIntent intent)
-    {
-        return !Mathf.Approximately(intent.MoveRight, 0f) ||
-            !Mathf.Approximately(intent.MoveForward, 0f) ||
-            !Mathf.Approximately(intent.Turn, 0f);
-    }
-
     private bool CanBeginHack()
     {
         if (_isActive)
@@ -320,6 +322,8 @@ public class EnemyHackController : MonoBehaviour, IHackable, IHackCommandSink
     private void NormalizeConfig()
     {
         defaultDuration = Mathf.Max(MinimumHackDuration, defaultDuration);
+        maxQueuedCommands = Mathf.Max(MinimumQueuedCommands, maxQueuedCommands);
+        commandStepDuration = Mathf.Max(MinimumCommandStepDuration, commandStepDuration);
     }
 
     private EnemyAI2D ResolveOwner()

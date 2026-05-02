@@ -24,6 +24,13 @@ public class EnemyAI2D : MonoBehaviour
     [SerializeField] private TextMesh statusText;
     [SerializeField] private Vector3 statusOffset = new Vector3(0f, 1.4f, 0f);
 
+    [Header("Suspicion Indicator")]
+    [SerializeField] private TextMesh suspicionText;
+    [SerializeField] private Vector3 suspicionOffset = new Vector3(0f, 1.65f, 0f);
+
+    [Header("Debug Indicators")]
+    [SerializeField] private bool showEnemyDebugIndicators;
+
     [Header("Debug Runtime")]
     [SerializeField] private EnemyState currentState = EnemyState.Patrol;
     [SerializeField, Range(0f, 1f)] private float suspicion;
@@ -31,6 +38,7 @@ public class EnemyAI2D : MonoBehaviour
     private EnemyContext _context;
     private EnemyHackController _hackController;
     private EnemyStatusIndicator _statusIndicator;
+    private EnemySuspicionIndicator _suspicionIndicator;
     private EnemyVisionOutline _visionOutline;
     private EnemyStateMachine _stateMachine;
 
@@ -55,8 +63,13 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         ConfigureHackController(allowCreate: true);
-        ConfigureStatusIndicator(allowCreate: true);
-        ConfigureVisionOutline(allowCreate: true);
+        if (showEnemyDebugIndicators)
+        {
+            ConfigureStatusIndicator(allowCreate: true);
+            ConfigureVisionOutline(allowCreate: true);
+        }
+
+        ConfigureSuspicionIndicator(allowCreate: true);
         InitializeRuntime();
         ApplyContextBindings(force: true);
         SyncDebugRuntime();
@@ -82,8 +95,13 @@ public class EnemyAI2D : MonoBehaviour
 
     private void LateUpdate()
     {
-        _statusIndicator?.RefreshPresentation();
-        RefreshVisionOutline(allowCreate: true);
+        RefreshSuspicionIndicator(allowCreate: true);
+
+        if (showEnemyDebugIndicators)
+        {
+            RefreshStatusIndicator(allowCreate: true);
+            RefreshVisionOutline(allowCreate: true);
+        }
     }
 
     private void OnValidate()
@@ -103,10 +121,21 @@ public class EnemyAI2D : MonoBehaviour
 
         _bindingsDirty = true;
         ConfigureHackController(allowCreate: false);
-        ConfigureStatusIndicator(allowCreate: false);
-        ConfigureVisionOutline(allowCreate: false);
+        if (showEnemyDebugIndicators)
+        {
+            ConfigureStatusIndicator(allowCreate: false);
+            ConfigureVisionOutline(allowCreate: false);
+        }
+
+        ConfigureSuspicionIndicator(allowCreate: false);
         ApplyContextBindings(force: false);
-        RefreshVisionOutline(allowCreate: false);
+        RefreshSuspicionIndicator(allowCreate: false);
+
+        if (showEnemyDebugIndicators)
+        {
+            RefreshStatusIndicator(allowCreate: false);
+            RefreshVisionOutline(allowCreate: false);
+        }
     }
 
     private void Reset()
@@ -332,7 +361,10 @@ public class EnemyAI2D : MonoBehaviour
         currentState = toState;
         _hackController?.ClearAttemptProgress();
 
-        _statusIndicator?.ApplyState(currentState);
+        if (showEnemyDebugIndicators)
+        {
+            _statusIndicator?.ApplyState(currentState);
+        }
     }
 
     private void SyncDebugRuntime()
@@ -353,6 +385,29 @@ public class EnemyAI2D : MonoBehaviour
 
         _statusIndicator.Configure(statusText, statusOffset, allowCreate);
         _statusIndicator.ApplyState(currentState, allowCreate);
+    }
+
+    private void RefreshStatusIndicator(bool allowCreate)
+    {
+        _statusIndicator = EnsureStatusIndicatorComponent(allowCreate);
+        if (_statusIndicator == null)
+        {
+            return;
+        }
+
+        _statusIndicator.ApplyState(currentState, allowCreate);
+        _statusIndicator.RefreshPresentation();
+    }
+
+    private void ConfigureSuspicionIndicator(bool allowCreate)
+    {
+        _suspicionIndicator = EnsureSuspicionIndicatorComponent(allowCreate);
+        if (_suspicionIndicator == null)
+        {
+            return;
+        }
+
+        _suspicionIndicator.Configure(suspicionText, suspicionOffset, allowCreate);
     }
 
     private void ConfigureHackController(bool allowCreate)
@@ -389,6 +444,27 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         return _statusIndicator;
+    }
+
+    private EnemySuspicionIndicator EnsureSuspicionIndicatorComponent(bool allowCreate)
+    {
+        if (_suspicionIndicator != null)
+        {
+            return _suspicionIndicator;
+        }
+
+        _suspicionIndicator = GetComponent<EnemySuspicionIndicator>();
+        if (_suspicionIndicator == null)
+        {
+            if (!allowCreate)
+            {
+                return null;
+            }
+
+            _suspicionIndicator = gameObject.AddComponent<EnemySuspicionIndicator>();
+        }
+
+        return _suspicionIndicator;
     }
 
     private EnemyVisionOutline EnsureVisionOutlineComponent(bool allowCreate)
@@ -451,6 +527,29 @@ public class EnemyAI2D : MonoBehaviour
         {
             _stateMachine.TransitionTo(EnemyState.Patrol);
         }
+    }
+
+    private void RefreshSuspicionIndicator(bool allowCreate)
+    {
+        _suspicionIndicator = EnsureSuspicionIndicatorComponent(allowCreate);
+        if (_suspicionIndicator == null)
+        {
+            return;
+        }
+
+        float currentSuspicion = _context?.Suspicion.Value ?? suspicion;
+        float suspicionThreshold = enemyConfig != null ? enemyConfig.suspicionThreshold : 1f;
+        bool shouldShow = _context != null &&
+            currentState != EnemyState.Hacked &&
+            currentState != EnemyState.Chase &&
+            currentState != EnemyState.Attack;
+
+        _suspicionIndicator.RefreshSuspicion(
+            currentSuspicion,
+            suspicionThreshold,
+            shouldShow,
+            allowCreate);
+        _suspicionIndicator.RefreshPresentation();
     }
 
     private void RefreshVisionOutline(bool allowCreate)

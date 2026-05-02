@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class PlayerInteractor : MonoBehaviour
@@ -11,6 +12,9 @@ public class PlayerInteractor : MonoBehaviour
 
     private EnemyHackController _hackTarget;
     private float _hackHoldTimer;
+
+    public event Action<EnemyHackController> HackSucceeded;
+    public event Action<EnemyHackController> HackCommandMenuRequested;
 
     public void HandleUseInput()
     {
@@ -63,6 +67,11 @@ public class PlayerInteractor : MonoBehaviour
 
     private void BeginUseAttempt()
     {
+        if (TryRequestActiveHackCommandMenu())
+        {
+            return;
+        }
+
         if (TryLockHackTarget())
         {
             return;
@@ -103,11 +112,26 @@ public class PlayerInteractor : MonoBehaviour
         HackBeginResult result = _hackTarget.TryBeginHack(HackRequest.Default);
         if (result.Succeeded)
         {
+            EnemyHackController hackedTarget = _hackTarget;
             ResetHackAttempt();
+            HackSucceeded?.Invoke(hackedTarget);
             return;
         }
 
         ResetHackAttempt();
+    }
+
+    private bool TryRequestActiveHackCommandMenu()
+    {
+        EnemyHackController target = FindNearestActiveHack();
+        if (target == null)
+        {
+            return false;
+        }
+
+        ResetHackAttempt();
+        HackCommandMenuRequested?.Invoke(target);
+        return true;
     }
 
     private bool TryLockHackTarget()
@@ -126,6 +150,16 @@ public class PlayerInteractor : MonoBehaviour
 
     private EnemyHackController FindNearestHackable()
     {
+        return FindNearestHackController(status => status.CanBegin);
+    }
+
+    private EnemyHackController FindNearestActiveHack()
+    {
+        return FindNearestHackController(status => status.IsActive);
+    }
+
+    private EnemyHackController FindNearestHackController(Func<HackStatusSnapshot, bool> statusPredicate)
+    {
         EnemyHackController[] hackables = FindObjectsByType<EnemyHackController>(FindObjectsSortMode.None);
         if (hackables == null || hackables.Length == 0)
         {
@@ -139,7 +173,13 @@ public class PlayerInteractor : MonoBehaviour
 
         foreach (EnemyHackController candidate in hackables)
         {
-            if (candidate == null || !candidate.GetHackStatus().CanBegin)
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            HackStatusSnapshot status = candidate.GetHackStatus();
+            if (!statusPredicate(status))
             {
                 continue;
             }
