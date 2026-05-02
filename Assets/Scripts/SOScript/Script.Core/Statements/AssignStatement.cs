@@ -34,7 +34,7 @@ namespace Script.Core.Statements
 
         IReadOnlyList<StatementArgument> IStatement.Arguments => Arguments;
 
-        public string Name => $"Assign ({Var.Name})";
+        public string Name => $"Assign ({Var.Name}: {ScriptTypeOperations.GetTypeText(Var.Type)})";
 
         public ControlFlowResult Execute()
         {

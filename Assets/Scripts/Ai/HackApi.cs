@@ -9,22 +9,64 @@ public interface IHackable
     void ClearAttemptProgress();
 }
 
-public interface IHackCommandSink
-{
-    bool TryMoveForward();
-    bool TryMoveLeft();
-    bool TryMoveRight();
-    bool TryRotateLeft();
-    bool TryRotateRight();
-    bool TryInteract();
-    void ClearCommand();
-}
-
 public enum HackPhase
 {
     Idle,
     Attempting,
     Active
+}
+
+public enum HackCommand
+{
+    None,
+    MoveForward,
+    MoveLeft,
+    MoveRight,
+    RotateLeft,
+    RotateRight,
+    Interact,
+    MoveGlobalUp,
+    MoveGlobalDown,
+    MoveGlobalLeft,
+    MoveGlobalRight
+}
+
+public readonly struct HackQueuedCommand
+{
+    public const float DefaultMovementDistance = 1f;
+
+    public HackQueuedCommand(HackCommand command, float distance = DefaultMovementDistance)
+    {
+        Command = command;
+        Distance = distance;
+    }
+
+    public HackCommand Command { get; }
+    public float Distance { get; }
+
+    public static HackQueuedCommand None => new HackQueuedCommand(HackCommand.None, 0f);
+
+    public bool IsMovement => IsMovementCommand(Command);
+
+    public static bool IsMovementCommand(HackCommand command)
+    {
+        return command switch
+        {
+            HackCommand.MoveForward => true,
+            HackCommand.MoveLeft => true,
+            HackCommand.MoveRight => true,
+            HackCommand.MoveGlobalUp => true,
+            HackCommand.MoveGlobalDown => true,
+            HackCommand.MoveGlobalLeft => true,
+            HackCommand.MoveGlobalRight => true,
+            _ => false
+        };
+    }
+
+    public static bool IsValidMovementDistance(float distance)
+    {
+        return distance > 0f && !float.IsNaN(distance) && !float.IsInfinity(distance);
+    }
 }
 
 public enum HackFailureReason

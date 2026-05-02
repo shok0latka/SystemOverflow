@@ -43,13 +43,20 @@ public class PlayerHealth : MonoBehaviour
     }
 
     private void Die()
+{
+    if (!reloadSceneOnDeath)
     {
-        if (!reloadSceneOnDeath)
-        {
-            return;
-        }
-
-        SaveSystem.SkipAutoLoadOnce();
+        return;
+    }
+    
+    GameStateManager gameState = GameStateManager.Instance;
+    if (gameState != null)
+    {
+        gameState.RespawnPlayer(this);
+    }
+    else
+    {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
+}
 }

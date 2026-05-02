@@ -26,7 +26,11 @@ public class EnemySuspicionIndicator : MonoBehaviour
 
         suspicionOffset = offset;
         EnsureSuspicionText(allowCreate);
-        HideSuspicion();
+
+        if (allowCreate)
+        {
+            HideSuspicion();
+        }
     }
 
     public void RefreshSuspicion(float suspicionValue, float suspicionThreshold, bool shouldShow, bool allowCreate)
@@ -40,7 +44,7 @@ public class EnemySuspicionIndicator : MonoBehaviour
         float normalizedSuspicion = NormalizeSuspicion(suspicionValue, suspicionThreshold);
         if (!shouldShow || normalizedSuspicion <= VisibleSuspicionEpsilon)
         {
-            HideSuspicion();
+            HideSuspicion(allowVisibilityChange: allowCreate);
             return;
         }
 
@@ -50,7 +54,10 @@ public class EnemySuspicionIndicator : MonoBehaviour
             SegmentCount);
         suspicionText.text = $"[{new string('#', filledSegments)}{new string('-', SegmentCount - filledSegments)}]";
         suspicionText.color = ResolveSuspicionColor(normalizedSuspicion);
-        suspicionText.gameObject.SetActive(true);
+        if (allowCreate)
+        {
+            suspicionText.gameObject.SetActive(true);
+        }
     }
 
     public void RefreshPresentation()
@@ -141,7 +148,7 @@ public class EnemySuspicionIndicator : MonoBehaviour
         return _lowSuspicionColor;
     }
 
-    private void HideSuspicion()
+    private void HideSuspicion(bool allowVisibilityChange = true)
     {
         if (suspicionText == null)
         {
@@ -149,6 +156,9 @@ public class EnemySuspicionIndicator : MonoBehaviour
         }
 
         suspicionText.text = string.Empty;
-        suspicionText.gameObject.SetActive(false);
+        if (allowVisibilityChange)
+        {
+            suspicionText.gameObject.SetActive(false);
+        }
     }
 }
