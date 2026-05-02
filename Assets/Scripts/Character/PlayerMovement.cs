@@ -1,25 +1,29 @@
 using System;
 using UnityEngine;
 
-
-//Сами разберётесь что тут к чему
-
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMovement : MonoBehaviour
 {
+    [Header("Speed")]
     public float moveSpeed = 5f;
+    
+    [Header("Smoothing")]
+    [Tooltip("Как быстро персонаж набирает скорость (больше = резче)")]
+    public float acceleration = 20f;
+    [Tooltip("Как быстро персонаж останавливается (больше = резче)")]
+    public float deceleration = 40f;
 
-    private float _baseSpeed = 5f;
-
+    private float _baseSpeed;
     private Rigidbody2D _rb;
     private Vector2 _input;
+    private Vector2 _currentVelocity;
 
-    private bool _isCrouchng = false;
-
-    private bool _isSpeed = false;
+    private bool _isCrouching;
+    private bool _isSpeed;
 
     private void Awake()
     {
+        _baseSpeed = moveSpeed;
         ConfigureTopDownRigidbody();
     }
 
@@ -53,7 +57,17 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
-        _rb.velocity = _input * moveSpeed;
+        Vector2 targetVelocity = _input * moveSpeed;
+
+        float smoothFactor = _input.magnitude > 0.01f ? acceleration : deceleration;
+
+        _currentVelocity = Vector2.MoveTowards(
+            _currentVelocity,
+            targetVelocity,
+            smoothFactor * Time.fixedDeltaTime
+        );
+
+        _rb.velocity = _currentVelocity;
     }
 
     private void ConfigureTopDownRigidbody()
@@ -74,30 +88,20 @@ public class PlayerMovement : MonoBehaviour
 
     public void SpeedUp(bool isSpeed)
     {
-        if(!_isCrouchng)
+        if (!_isCrouching)
         {
             _isSpeed = isSpeed;
-
-            if(!_isSpeed)
-                moveSpeed = _baseSpeed ;
-            else
-                moveSpeed = _baseSpeed * 2.0f;
-            Debug.Log(moveSpeed);  
+            moveSpeed = _isSpeed ? _baseSpeed * 2f : _baseSpeed;
         }
     }
 
-    public void Crouch(bool isCrouchng)
+    public void Crouch(bool isCrouching)
     {
-        if(!_isSpeed)
+        if (!_isSpeed)
         {
-            _isCrouchng = isCrouchng;
-
-            if(!_isCrouchng)
-                moveSpeed = _baseSpeed;
-            else
-                moveSpeed = _baseSpeed / 2.0f;
-
-            Debug.Log(moveSpeed);   
+            _isCrouching = isCrouching;
+            moveSpeed = _isCrouching ? _baseSpeed * 0.5f : _baseSpeed;
         }
     }
+    public Vector2 CurrentVelocity => _currentVelocity;
 }
