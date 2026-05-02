@@ -11,7 +11,7 @@ public class EnemyConfig : ScriptableObject
     private const float MaximumVisionConeAngleDegrees = 360f;
     private const float MinimumAttackRadius = 1f;
     private const float MinimumAttackCooldown = 0.05f;
-    private const int MinimumAttackDamage = 1;
+    private const int MinimumAttackDamage = 0;
     private const float MinimumHackDuration = 0.2f;
     private const float MinimumHackResistance = 0f;
     private const float MaximumHackResistance = 0.95f;
