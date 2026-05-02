@@ -18,8 +18,8 @@ public class PrintStatement: IStatement
 {
     public event Func<Task>? OnExecuteAsync;
     
-    private MessageType messageType;
-    private UIConsole console;
+    private readonly MessageType messageType;
+    private readonly UIConsole console;
 
     public PrintStatement(UIConsole console_, MessageType messageType_)
     {

@@ -9,18 +9,24 @@ public enum MessageType
 
 public class UIConsole: Foldout
 {
+    public static UIConsole Instance = new();
     private readonly ScrollView messages;
     private readonly Button clearButton;
 
-    public UIConsole()
+    private UIConsole()
     {
         text = "Console";
         value = false;
         AddToClassList("ui-console");
 
-        messages = new() { verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible };
+        messages = new() 
+        { 
+            verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible,
+            mouseWheelScrollSize = 1000,
+            mode = ScrollViewMode.VerticalAndHorizontal
+        };
+        
         messages.style.height = 400;
-        messages.mouseWheelScrollSize = 1000;
 
         clearButton = new() { text = "Clear" };
         clearButton.AddToClassList("toolbar-button");

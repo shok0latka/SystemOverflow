@@ -27,8 +27,6 @@ public class ScriptEditorUI : MonoBehaviour
 
     List<Variable> scope = new();
     Foldout varList;
-
-    UIConsole console;
     
 
     void Start()
@@ -47,7 +45,7 @@ public class ScriptEditorUI : MonoBehaviour
         BuildElements(elements, editor);
         BuildToolbar(root);
 
-        TestConsole();
+        // TestConsole();
     }
 
     void TestConsole()
@@ -56,7 +54,7 @@ public class ScriptEditorUI : MonoBehaviour
 
         for (int i = 0; i < 15; i++)
         {
-            console.Write($"i = {i}", types[i % types.Count]);
+            UIConsole.Instance.Write($"i = {i}", types[i % types.Count]);
         }
     }
 
@@ -224,9 +222,16 @@ public class ScriptEditorUI : MonoBehaviour
                 button.clicked += () =>
                 {
                     var varName = textField.value;
-                    var var = ScriptTypeOperations.CreateVariable(type, varName); // TODO exception handling
+                    try
+                    {
+                        var var = ScriptTypeOperations.CreateVariable(type, varName);
+                        AddVariable(var, editor);
+                    }
+                    catch(ArgumentException e)
+                    {
+                        UIConsole.Instance.WriteError(e.Message);
+                    }
 
-                    AddVariable(var, editor);
                 };
             }
             else
@@ -236,9 +241,9 @@ public class ScriptEditorUI : MonoBehaviour
         }
 
         var messaging = elements.Q<Foldout>("Messages");
-        messaging.Add(new PrintStatementBlockSpawner(console, MessageType.Info, editor));
-        messaging.Add(new PrintStatementBlockSpawner(console, MessageType.Warning, editor));
-        messaging.Add(new PrintStatementBlockSpawner(console, MessageType.Error, editor));
+        messaging.Add(new PrintStatementBlockSpawner(UIConsole.Instance, MessageType.Info, editor));
+        messaging.Add(new PrintStatementBlockSpawner(UIConsole.Instance, MessageType.Warning, editor));
+        messaging.Add(new PrintStatementBlockSpawner(UIConsole.Instance, MessageType.Error, editor));
     }
 
     void AddVariable(Variable var, VisualElement editor)
@@ -262,8 +267,7 @@ public class ScriptEditorUI : MonoBehaviour
 
     void BuildConsole(VisualElement editor)
     {
-        console = new UIConsole();
-        editor.Add(console);
+        editor.Add(UIConsole.Instance);
     }
 
     void DeleteSelected()
@@ -299,25 +303,39 @@ public class ScriptEditorUI : MonoBehaviour
 
         if (controller.SelectedBlock == null)
         {
-            Debug.LogWarning("No block selected");
+            UIConsole.Instance.WriteWarning("No block selected");
             return;
         }
 
         if (controller.SelectedBlock is ExpressionBlockView exprBlock)
         {
-            var result = await exprBlock.Expression.EvaluateAsync();
-            resultLabel.text = $"Result: {result}";
+            try
+            {
+                var result = await exprBlock.Expression.EvaluateAsync();
+                resultLabel.text = $"Result: {result}";
+            }
+            catch (Exception e)
+            {
+                UIConsole.Instance.WriteError(e.Message);
+            }
             return;
         }
 
         if (controller.SelectedBlock is StatementBlockView stmtBlock)
         {
-            var result = await stmtBlock.Statement.ExecuteAsync();
-            resultLabel.text = $"Statement executed (control flow: {result.Kind})";
+            try
+            {
+                var result = await stmtBlock.Statement.ExecuteAsync();
+                resultLabel.text = $"Statement executed (control flow: {result.Kind})";
+            }
+            catch (Exception e)
+            {
+                UIConsole.Instance.WriteError(e.Message);
+            }
             return;
         }
 
-        Debug.LogWarning("Selected block is not evaluable");
+        UIConsole.Instance.WriteWarning("Selected block is not evaluable");
     }
 
     public void OnEnter()

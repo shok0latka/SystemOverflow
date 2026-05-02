@@ -33,6 +33,7 @@ namespace Script.UI.Controllers
 
         public void AddFreeBlock(ExpressionBlockView block)
         {
+            Debug.Log($"Add free block {block.Expression.GetType()}");
             block.RemoveFromHierarchy();
 
             block.style.position = Position.Absolute;
@@ -53,6 +54,7 @@ namespace Script.UI.Controllers
 
         public void AddFreeBlock(StatementBlockView block)
         {
+            Debug.Log($"Add free block {block.Statement.GetType()}");
             block.RemoveFromHierarchy();
 
             block.style.position = Position.Absolute;

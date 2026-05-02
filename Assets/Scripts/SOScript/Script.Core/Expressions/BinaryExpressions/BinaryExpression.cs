@@ -62,15 +62,19 @@ namespace Script.Core.Expressions.BinaryExpressions
         {
             if (LeftArg is null)
             {
-                throw new ArgumentNullException(nameof(LeftArg));
+                throw new ArgumentNullException(nameof(LeftArg), "Left expression unset");
             }
             if (RightArg is null)
             {
-                throw new ArgumentNullException(nameof(RightArg));
+                throw new ArgumentNullException(nameof(RightArg), "Right expression unset");
             }
             if (CurrentOverload is null)
             {
-                throw new ArgumentNullException(nameof(CurrentOverload));
+                throw new ArgumentNullException(
+                    nameof(CurrentOverload), 
+                    $"Cound not find operator {Tag} overload for {leftArg?.Type ?? ScriptType.Undefined} and " + 
+                    $"{rightArg?.Type ?? ScriptType.Undefined}"
+                );
             }
             InvokeOnEvaluate();
             return CurrentOverload.Evaluate(LeftArg, RightArg);
@@ -85,15 +89,19 @@ namespace Script.Core.Expressions.BinaryExpressions
                 await RightArg.EvaluateAsync();
             if (LeftArg is null)
             {
-                throw new ArgumentNullException(nameof(LeftArg));
+                throw new ArgumentNullException(nameof(LeftArg), "Left expression unset");
             }
             if (RightArg is null)
             {
-                throw new ArgumentNullException(nameof(RightArg));
+                throw new ArgumentNullException(nameof(RightArg), "Right expression unset");
             }
             if (CurrentOverload is null)
             {
-                throw new ArgumentNullException(nameof(CurrentOverload));
+                throw new ArgumentNullException(
+                    nameof(CurrentOverload), 
+                    $"Cound not find operator {Tag} overload for {leftArg?.Type ?? ScriptType.Undefined} and " + 
+                    $"{rightArg?.Type ?? ScriptType.Undefined}"
+                );
             }
             return CurrentOverload.Evaluate(LeftArg, RightArg);
         }

@@ -151,13 +151,13 @@ namespace Script.UI.Controllers
 
             if (slot.ParentHost is ExpressionBlockView eqHost && eqHost == block)
             {
-                Debug.LogWarning($"[GraphController] Connection rejected: cannot attach expression block '{block.DebugName}' to its own slot.");
+                UIConsole.Instance.WriteWarning($"Connection rejected: cycle risk");
                 return;
             }
 
             if (parentExpr != null && WouldCreateCycle(parentExpr, childExpr))
             {
-                Debug.LogWarning($"[GraphController] Connection rejected: cycle detected for {block.DebugName}");
+                UIConsole.Instance.WriteWarning($"Connection rejected: cycle risk");
                 return;
             }
 
@@ -165,17 +165,27 @@ namespace Script.UI.Controllers
             {
                 Debug.Log($"[GraphController] Detach {block.DebugName} from previous slot");
                 block.ParentSlot.ClearChild();
-                GraphRoot.Instance?.AddFreeBlock(block);
             }
 
-            var replaced = slot.ReplaceChild(block);
-            if (replaced != null)
+            var pos = block.ChangeCoordinatesTo(GraphRoot.Instance, new Vector2(0, 0));
+            GraphRoot.Instance?.AddFreeBlock(block, pos);
+
+            try
             {
-                Debug.Log($"[GraphController] Slot occupied, freeing block {replaced.DebugName}");
-                GraphRoot.Instance?.AddFreeBlock(replaced);
-            }
+                var replaced = slot.ReplaceChild(block);
+                if (replaced != null)
+                {
+                    Debug.Log($"[GraphController] Slot occupied, freeing block {replaced.DebugName}");
+                    GraphRoot.Instance?.AddFreeBlock(replaced);
+                }
 
-            Debug.Log($"[GraphController] Connect success: {block.DebugName} -> {slot.ParentHost.DebugName}[{slot.Index}]");
+                Debug.Log($"[GraphController] Connect success: {block.DebugName} -> {slot.ParentHost.DebugName}[{slot.Index}]");
+            }
+            catch (Exception e)
+            {
+                GraphRoot.Instance?.AddFreeBlock(block, pos);
+                UIConsole.Instance.WriteError(e.Message);
+            }
         }
 
         void Connect(StatementBlockView block, StmtSlotView slot)
@@ -184,7 +194,7 @@ namespace Script.UI.Controllers
 
             if (slot.ParentBlock == block || WouldCreateStatementCycle(slot.ParentBlock.Statement, block.Statement))
             {
-                Debug.LogWarning($"[GraphController] Connection rejected: cannot attach statement '{block.DebugName}' to its own slot '{slot.ParentBlock.DebugName}:{slot.Kind}' (cycle risk).");
+                UIConsole.Instance.WriteWarning($"[GraphController] Connection rejected: cycle risk");
                 return;
             }
 
@@ -192,17 +202,27 @@ namespace Script.UI.Controllers
             {
                 Debug.Log($"[GraphController] Detach {block.DebugName} from previous slot");
                 block.ParentSlot.ClearChild();
-                GraphRoot.Instance?.AddFreeBlock(block);
             }
 
-            var replaced = slot.ReplaceChild(block);
-            if (replaced != null)
+            var pos = block.ChangeCoordinatesTo(GraphRoot.Instance, new Vector2(0, 0));
+            GraphRoot.Instance?.AddFreeBlock(block, pos);
+
+            try
             {
-                Debug.Log($"[GraphController] Slot occupied, freeing block {replaced.DebugName}");
-                GraphRoot.Instance?.AddFreeBlock(replaced);
-            }
+                var replaced = slot.ReplaceChild(block);
+                if (replaced != null)
+                {
+                    Debug.Log($"[GraphController] Slot occupied, freeing block {replaced.DebugName}");
+                    GraphRoot.Instance?.AddFreeBlock(replaced);
+                }
 
-            Debug.Log($"[GraphController] Connect success: {block.DebugName} -> {slot.ParentBlock.DebugName}:{slot.Kind}");
+                Debug.Log($"[GraphController] Connect success: {block.DebugName} -> {slot.ParentBlock.DebugName}:{slot.Kind}");
+            }
+            catch (Exception e)
+            {
+                GraphRoot.Instance?.AddFreeBlock(block, pos);
+                UIConsole.Instance.WriteError(e.Message);
+            }
         }
 
         bool WouldCreateCycle(Expression parent, Expression child)
