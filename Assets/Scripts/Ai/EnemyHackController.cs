@@ -22,7 +22,7 @@ public class EnemyHackController : MonoBehaviour, IHackable
     private float _timeRemaining;
     private bool _hasAttemptProgress;
     private float _attemptProgress;
-    private readonly Queue<HackCommand> _queuedCommands = new();
+    private readonly Queue<HackQueuedCommand> _queuedCommands = new();
 
     public int QueuedCommandCount => _queuedCommands.Count;
     public int MaxQueuedCommands => maxQueuedCommands;
@@ -148,12 +148,22 @@ public class EnemyHackController : MonoBehaviour, IHackable
 
     public bool TryEnqueueCommand(HackCommand command)
     {
-        if (!CanAcceptCommands() || command == HackCommand.None)
+        return TryEnqueueCommand(command, HackQueuedCommand.DefaultMovementDistance);
+    }
+
+    public bool TryEnqueueCommand(HackCommand command, float distance)
+    {
+        return TryEnqueueCommand(new HackQueuedCommand(command, distance));
+    }
+
+    public bool TryEnqueueCommand(HackQueuedCommand command)
+    {
+        if (!CanAcceptCommands() || command.Command == HackCommand.None)
         {
             return false;
         }
 
-        if (_queuedCommands.Count >= maxQueuedCommands)
+        if (_queuedCommands.Count >= maxQueuedCommands || !IsValidQueuedCommand(command))
         {
             return false;
         }
@@ -162,23 +172,63 @@ public class EnemyHackController : MonoBehaviour, IHackable
         return true;
     }
 
-    public bool TryDequeueCommand(out HackCommand command)
+    public bool TryEnqueueCommands(IReadOnlyList<HackQueuedCommand> commands)
+    {
+        if (!CanAcceptCommands() || commands == null || commands.Count == 0)
+        {
+            return false;
+        }
+
+        if (_queuedCommands.Count + commands.Count > maxQueuedCommands)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < commands.Count; i++)
+        {
+            if (!IsValidQueuedCommand(commands[i]))
+            {
+                return false;
+            }
+        }
+
+        for (int i = 0; i < commands.Count; i++)
+        {
+            _queuedCommands.Enqueue(commands[i]);
+        }
+
+        return true;
+    }
+
+    public bool TryDequeueCommand(out HackQueuedCommand command)
     {
         if (!CanAcceptCommands())
         {
             ClearCommands();
-            command = HackCommand.None;
+            command = HackQueuedCommand.None;
             return false;
         }
 
         if (_queuedCommands.Count == 0)
         {
-            command = HackCommand.None;
+            command = HackQueuedCommand.None;
             return false;
         }
 
         command = _queuedCommands.Dequeue();
         return true;
+    }
+
+    public bool TryDequeueCommand(out HackCommand command)
+    {
+        if (TryDequeueCommand(out HackQueuedCommand queuedCommand))
+        {
+            command = queuedCommand.Command;
+            return true;
+        }
+
+        command = HackCommand.None;
+        return false;
     }
 
     public void ClearCommands()
@@ -295,6 +345,17 @@ public class EnemyHackController : MonoBehaviour, IHackable
     private bool CanAcceptCommands()
     {
         return _isActive;
+    }
+
+    private bool IsValidQueuedCommand(HackQueuedCommand command)
+    {
+        if (command.Command == HackCommand.None)
+        {
+            return false;
+        }
+
+        return !command.IsMovement ||
+            HackQueuedCommand.IsValidMovementDistance(command.Distance);
     }
 
     private bool CanBeginHack()

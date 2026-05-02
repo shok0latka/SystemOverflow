@@ -2,7 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Script.Core.Expressions;
+using Script.Core.Expressions.LiteralExpressions.Implementations;
 using Script.Core.Statements;
 using UnityEngine.UIElements;
 using UnityEngine;
@@ -51,6 +53,7 @@ namespace Script.UI.Views
 
         public StatementBlockView(EnemyCommandStatement stmt, string? debugName = null) : this((IStatement)stmt, debugName)
         {
+            AttachDefaultDistanceExpression(stmt);
             BuildNextSlot();
         }
 
@@ -90,6 +93,20 @@ namespace Script.UI.Views
                 ExprSlots.Add(slot);
                 content.Add(slot);
             }
+        }
+
+        void AttachDefaultDistanceExpression(EnemyCommandStatement stmt)
+        {
+            if (!HackQueuedCommand.IsMovementCommand(stmt.Command) || ExprSlots.Count == 0)
+            {
+                return;
+            }
+
+            var distanceExpression = new NumeralExpression
+            {
+                RawText = HackQueuedCommand.DefaultMovementDistance.ToString(CultureInfo.InvariantCulture)
+            };
+            ExprSlots[0].SetChild(new ExpressionBlockView(distanceExpression));
         }
 
         protected void BuildStatementSlot(string labelText, StmtSlotKind kind)

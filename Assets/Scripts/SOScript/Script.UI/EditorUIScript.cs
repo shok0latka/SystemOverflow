@@ -12,6 +12,20 @@ using Script.UI.Views;
 
 public class ScriptEditorUI : MonoBehaviour
 {
+    static readonly HackCommand[] EnemyCommandPaletteOrder =
+    {
+        HackCommand.MoveForward,
+        HackCommand.MoveLeft,
+        HackCommand.MoveRight,
+        HackCommand.MoveGlobalUp,
+        HackCommand.MoveGlobalDown,
+        HackCommand.MoveGlobalLeft,
+        HackCommand.MoveGlobalRight,
+        HackCommand.RotateLeft,
+        HackCommand.RotateRight,
+        HackCommand.Interact
+    };
+
     [SerializeField] UIDocument document;
     [SerializeField] StyleSheet style;
     [SerializeField] OverloadSystem system;
@@ -219,13 +233,8 @@ public class ScriptEditorUI : MonoBehaviour
         }
 
         var enemyCommands = GetOrCreateEnemyCommandsFoldout(elements);
-        foreach (var command in Enum.GetValues(typeof(HackCommand)).Cast<HackCommand>())
+        foreach (var command in EnemyCommandPaletteOrder)
         {
-            if (command == HackCommand.None)
-            {
-                continue;
-            }
-
             enemyCommands.Add(new EnemyCommandStatementSpawner(command, editor));
         }
 

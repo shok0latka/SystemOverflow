@@ -254,6 +254,23 @@ public class EnemyContext
         Rigidbody.MovePosition(Rigidbody.position + moveDirection * speed * fixedDeltaTime);
     }
 
+    public bool MoveInDirection(Vector2 direction, float distanceStep)
+    {
+        if (Rigidbody == null || distanceStep <= 0f)
+        {
+            return false;
+        }
+
+        if (direction.sqrMagnitude < MinimumInputMagnitude)
+        {
+            return false;
+        }
+
+        Vector2 moveDirection = direction.normalized;
+        Rigidbody.MovePosition(Rigidbody.position + moveDirection * distanceStep);
+        return true;
+    }
+
     public void RotateViewDirection(float turnInput, float degreesPerSecond, float deltaTime)
     {
         float clampedTurnInput = Mathf.Clamp(turnInput, -1f, 1f);

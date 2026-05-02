@@ -110,6 +110,11 @@ namespace Script.UI.Views
             };
             field.AddToClassList("expr-input");
 
+            field.RegisterValueChangedCallback(evt =>
+            {
+                expr.RawText = evt.newValue;
+            });
+
             field.RegisterCallback<FocusOutEvent>(_ =>
             {
                 expr.RawText = field.value;
