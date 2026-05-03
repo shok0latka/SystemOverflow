@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1e3bccb530946f6a3d1504ff0ad8b4e, type: 3}
   m_Name: Scout
   m_EditorClassIdentifier: 
-  patrolSpeed: 3.2
-  chaseSpeed: 4.6
+  patrolSpeed: 1
+  chaseSpeed: 1
   visionRadius: 7
   visionConeAngleDegrees: 90
   loseSightTime: 1

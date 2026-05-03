@@ -11,8 +11,7 @@ public class EnemyConfig : ScriptableObject
     private const float MaximumVisionConeAngleDegrees = 360f;
     private const float MinimumAttackRadius = 1f;
     private const float MinimumAttackCooldown = 0.05f;
-    private const int MinimumAttackDamage = 1;
-    private const float MinimumInteractRadius = 0.05f;
+    private const int MinimumAttackDamage = 0;
     private const float MinimumHackDuration = 0.2f;
     private const float MinimumHackResistance = 0f;
     private const float MaximumHackResistance = 0.95f;
@@ -33,9 +32,6 @@ public class EnemyConfig : ScriptableObject
     [Header("Behavior")]
     [Range(0f, 1f)] public float aggressiveness = 0.5f;
     public float searchDuration = 2.5f;
-
-    [Header("Interaction")]
-    public float interactRadius = 0.75f;
 
     [Header("Attack")]
     public float attackRadius = 1.2f;
@@ -74,7 +70,6 @@ public class EnemyConfig : ScriptableObject
 
         aggressiveness = Mathf.Clamp01(aggressiveness);
         searchDuration = Mathf.Max(MinimumDuration, searchDuration);
-        interactRadius = Mathf.Max(MinimumInteractRadius, interactRadius);
 
         attackRadius = Mathf.Max(MinimumAttackRadius, attackRadius);
         attackCooldown = Mathf.Max(MinimumAttackCooldown, attackCooldown);
