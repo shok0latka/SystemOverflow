@@ -172,34 +172,6 @@ public class EnemyHackController : MonoBehaviour, IHackable
         return true;
     }
 
-    public bool TryEnqueueCommands(IReadOnlyList<HackQueuedCommand> commands)
-    {
-        if (!CanAcceptCommands() || commands == null || commands.Count == 0)
-        {
-            return false;
-        }
-
-        if (_queuedCommands.Count + commands.Count > maxQueuedCommands)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < commands.Count; i++)
-        {
-            if (!IsValidQueuedCommand(commands[i]))
-            {
-                return false;
-            }
-        }
-
-        for (int i = 0; i < commands.Count; i++)
-        {
-            _queuedCommands.Enqueue(commands[i]);
-        }
-
-        return true;
-    }
-
     public bool TryDequeueCommand(out HackQueuedCommand command)
     {
         if (!CanAcceptCommands())

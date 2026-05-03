@@ -84,7 +84,7 @@ public class HackedState : EnemyStateBase
             case HackCommand.Interact:
                 if (!_activeInteractExecuted)
                 {
-                    Context.TryInteractWithNearestForwardInteractable();
+                    Context.TryInteractWithNearestInteractable();
                     _activeInteractExecuted = true;
                 }
 

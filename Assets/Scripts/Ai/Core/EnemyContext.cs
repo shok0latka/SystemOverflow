@@ -292,20 +292,17 @@ public class EnemyContext
         UpdateViewDirection(rotatedDirection);
     }
 
-    public bool TryInteractWithNearestForwardInteractable()
+    public bool TryInteractWithNearestInteractable()
     {
-        float interactionRadius = CloseVisionRadius;
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(Position, interactionRadius);
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(Position, Config.interactRadius);
         if (colliders == null || colliders.Length == 0)
         {
             return false;
         }
 
-        Vector2 forward = ViewDirection.sqrMagnitude < MinimumInputMagnitude
-            ? Vector2.right
-            : ViewDirection.normalized;
         Interactable nearestInteractable = null;
         float nearestSqrDistance = float.MaxValue;
+        Vector2 position = Position;
 
         foreach (Collider2D collider in colliders)
         {
@@ -320,17 +317,8 @@ public class EnemyContext
                 continue;
             }
 
-            Vector2 toInteractable = (Vector2)interactable.transform.position - Position;
+            Vector2 toInteractable = (Vector2)interactable.transform.position - position;
             float sqrDistance = toInteractable.sqrMagnitude;
-            if (sqrDistance >= MinimumInputMagnitude)
-            {
-                Vector2 directionToInteractable = toInteractable / Mathf.Sqrt(sqrDistance);
-                if (Vector2.Dot(forward, directionToInteractable) <= 0f)
-                {
-                    continue;
-                }
-            }
-
             if (sqrDistance < nearestSqrDistance)
             {
                 nearestSqrDistance = sqrDistance;

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public static class EnemyCommandScriptContext
@@ -51,22 +50,4 @@ public static class EnemyCommandScriptContext
         }
     }
 
-    public static void EnqueueCommands(IReadOnlyList<HackQueuedCommand> commands)
-    {
-        if (!HasTarget)
-        {
-            throw new System.InvalidOperationException("No active hacked enemy is bound.");
-        }
-
-        if (commands == null || commands.Count == 0)
-        {
-            throw new System.InvalidOperationException("No commands were provided.");
-        }
-
-        if (!Target.TryEnqueueCommands(commands))
-        {
-            Debug.LogWarning($"Failed to enqueue {commands.Count} hack commands.", Target);
-            throw new System.InvalidOperationException("Could not enqueue command sequence.");
-        }
-    }
 }

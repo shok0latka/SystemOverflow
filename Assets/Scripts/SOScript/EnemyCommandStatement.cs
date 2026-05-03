@@ -30,75 +30,15 @@ public sealed class EnemyCommandStatement : IStatement
 
     public ControlFlowResult Execute()
     {
-        if (TryCollectEnemyCommandChain(out List<EnemyCommandStatement> commandStatements))
-        {
-            EnemyCommandScriptContext.EnqueueCommands(BuildQueuedCommands(commandStatements));
-            return ControlFlowResult.None;
-        }
-
         EnemyCommandScriptContext.EnqueueCommand(BuildQueuedCommand());
         return Next?.Execute() ?? ControlFlowResult.None;
     }
 
     public async Task<ControlFlowResult> ExecuteAsync()
     {
-        if (TryCollectEnemyCommandChain(out List<EnemyCommandStatement> commandStatements))
-        {
-            List<HackQueuedCommand> queuedCommands = await BuildQueuedCommandsAsync(commandStatements);
-            foreach (EnemyCommandStatement statement in commandStatements)
-            {
-                await statement.InvokeExecutePulseAsync();
-            }
-
-            EnemyCommandScriptContext.EnqueueCommands(queuedCommands);
-            return ControlFlowResult.None;
-        }
-
         await InvokeExecutePulseAsync();
         EnemyCommandScriptContext.EnqueueCommand(await BuildQueuedCommandAsync());
         return await (Next?.ExecuteAsync() ?? Task.FromResult(ControlFlowResult.None));
-    }
-
-    private bool TryCollectEnemyCommandChain(out List<EnemyCommandStatement> commandStatements)
-    {
-        commandStatements = new List<EnemyCommandStatement> { this };
-
-        IStatement? current = Next;
-        while (current != null)
-        {
-            if (current is not EnemyCommandStatement enemyCommandStatement)
-            {
-                commandStatements.Clear();
-                return false;
-            }
-
-            commandStatements.Add(enemyCommandStatement);
-            current = enemyCommandStatement.Next;
-        }
-
-        return true;
-    }
-
-    private static List<HackQueuedCommand> BuildQueuedCommands(List<EnemyCommandStatement> commandStatements)
-    {
-        var queuedCommands = new List<HackQueuedCommand>(commandStatements.Count);
-        foreach (EnemyCommandStatement statement in commandStatements)
-        {
-            queuedCommands.Add(statement.BuildQueuedCommand());
-        }
-
-        return queuedCommands;
-    }
-
-    private static async Task<List<HackQueuedCommand>> BuildQueuedCommandsAsync(List<EnemyCommandStatement> commandStatements)
-    {
-        var queuedCommands = new List<HackQueuedCommand>(commandStatements.Count);
-        foreach (EnemyCommandStatement statement in commandStatements)
-        {
-            queuedCommands.Add(await statement.BuildQueuedCommandAsync());
-        }
-
-        return queuedCommands;
     }
 
     private HackQueuedCommand BuildQueuedCommand()
