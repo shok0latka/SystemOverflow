@@ -912,6 +912,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _fade: {fileID: 1707041723}
+  NextScene: SecondLevel
 --- !u!1 &934337468
 GameObject:
   m_ObjectHideFlags: 0
