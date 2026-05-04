@@ -27,3 +27,6 @@ MonoBehaviour:
   attackDamage: 1
   hackDuration: 40
   hackResistance: 0.1
+  alertRadius: 5
+  alertSignalSpeed: 2
+  alertSuspicion: 0.45

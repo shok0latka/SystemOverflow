@@ -47,6 +47,8 @@ public class EnemyAI2D : MonoBehaviour
     private Transform _boundPlayer;
     private int _boundObstacleMask;
     private bool _bindingsDirty = true;
+    private bool _hasSentAlertForCurrentChase;
+    private bool _suppressAlertBroadcast;
 
     public string SaveId => persistentId;
     public EnemyState CurrentState => _stateMachine?.CurrentState ?? currentState;
@@ -231,7 +233,38 @@ public class EnemyAI2D : MonoBehaviour
             _hackController?.TryCancelHack();
         }
 
+        _suppressAlertBroadcast = true;
         _stateMachine.TransitionTo(restoredState);
+        _suppressAlertBroadcast = false;
+        UpdateViewDirectionForCurrentState(_stateMachine.CurrentState);
+        SyncDebugRuntime();
+    }
+
+    public void ReceiveEnemyAlert(Vector2 playerPosition)
+    {
+        if (!CanReceiveEnemyAlert())
+        {
+            return;
+        }
+
+        if (_context == null || _stateMachine == null)
+        {
+            if (!ValidateDependencies())
+            {
+                return;
+            }
+
+            ConfigureHackController(allowCreate: true);
+            InitializeRuntime();
+            ApplyContextBindings(force: true);
+        }
+
+        float alertSuspicion = enemyConfig != null ? enemyConfig.alertSuspicion : 0.45f;
+        _context.LastKnownPlayerPosition = playerPosition;
+        _context.Suspicion.Set(Mathf.Max(_context.Suspicion.Value, alertSuspicion));
+        _context.TimeSinceSeenPlayer = 0f;
+        _context.ResetReturnTimer();
+        _stateMachine.TransitionTo(EnemyState.ReturnToPatrol);
         UpdateViewDirectionForCurrentState(_stateMachine.CurrentState);
         SyncDebugRuntime();
     }
@@ -356,10 +389,27 @@ public class EnemyAI2D : MonoBehaviour
         _bindingsDirty = false;
     }
 
-    private void HandleStateChanged(EnemyState _, EnemyState toState)
+    private void HandleStateChanged(EnemyState fromState, EnemyState toState)
     {
         currentState = toState;
         _hackController?.ClearAttemptProgress();
+
+        if (toState == EnemyState.Chase)
+        {
+            if (fromState != EnemyState.Chase &&
+                !_hasSentAlertForCurrentChase &&
+                !_suppressAlertBroadcast)
+            {
+                TrySendEnemyAlert();
+                _hasSentAlertForCurrentChase = true;
+            }
+        }
+        else if (toState == EnemyState.Patrol ||
+            toState == EnemyState.ReturnToPatrol ||
+            toState == EnemyState.Hacked)
+        {
+            _hasSentAlertForCurrentChase = false;
+        }
 
         if (showEnemyDebugIndicators)
         {
@@ -572,6 +622,72 @@ public class EnemyAI2D : MonoBehaviour
             _context.ViewConeAngleDegrees,
             shouldShow,
             allowCreate);
+    }
+
+    private void TrySendEnemyAlert()
+    {
+        if (_context == null || enemyConfig == null || enemyConfig.alertRadius <= 0f)
+        {
+            return;
+        }
+
+        EnemyAI2D receiver = FindNearestAlertReceiver();
+        if (receiver == null)
+        {
+            return;
+        }
+
+        EnemyAlertSignal.Spawn(
+            _context.Position,
+            receiver,
+            _context.LastKnownPlayerPosition,
+            enemyConfig.alertSignalSpeed);
+    }
+
+    private EnemyAI2D FindNearestAlertReceiver()
+    {
+        EnemyAI2D[] enemies = FindObjectsByType<EnemyAI2D>(FindObjectsSortMode.None);
+        if (enemies == null || enemies.Length == 0)
+        {
+            return null;
+        }
+
+        Vector2 origin = _context.Position;
+        float maxSqrDistance = enemyConfig.alertRadius * enemyConfig.alertRadius;
+        float nearestSqrDistance = maxSqrDistance;
+        EnemyAI2D nearestEnemy = null;
+
+        foreach (EnemyAI2D enemy in enemies)
+        {
+            if (enemy == null || enemy == this || !enemy.CanReceiveEnemyAlert())
+            {
+                continue;
+            }
+
+            float sqrDistance = ((Vector2)enemy.transform.position - origin).sqrMagnitude;
+            if (sqrDistance > nearestSqrDistance)
+            {
+                continue;
+            }
+
+            nearestSqrDistance = sqrDistance;
+            nearestEnemy = enemy;
+        }
+
+        return nearestEnemy;
+    }
+
+    private bool CanReceiveEnemyAlert()
+    {
+        if (!isActiveAndEnabled)
+        {
+            return false;
+        }
+
+        EnemyState state = CurrentState;
+        return state != EnemyState.Chase &&
+            state != EnemyState.Attack &&
+            state != EnemyState.Hacked;
     }
 
     private void UpdateViewDirectionForCurrentState(EnemyState state)

@@ -16,6 +16,8 @@ public class EnemyConfig : ScriptableObject
     private const float MinimumHackDuration = 0.2f;
     private const float MinimumHackResistance = 0f;
     private const float MaximumHackResistance = 0.95f;
+    private const float MinimumAlertRadius = 0f;
+    private const float MinimumAlertSignalSpeed = 0.05f;
 
     [Header("Movement")]
     public float patrolSpeed = 2f;
@@ -46,6 +48,11 @@ public class EnemyConfig : ScriptableObject
     [FormerlySerializedAs("baseHackDuration")]
     public float hackDuration = 40f;
     [Range(0f, 0.95f)] public float hackResistance = 0.2f;
+
+    [Header("Alert")]
+    public float alertRadius = 5f;
+    public float alertSignalSpeed = 2f;
+    [Range(0f, 1f)] public float alertSuspicion = 0.45f;
 
     private void OnEnable()
     {
@@ -85,5 +92,9 @@ public class EnemyConfig : ScriptableObject
             hackResistance,
             MinimumHackResistance,
             MaximumHackResistance);
+
+        alertRadius = Mathf.Max(MinimumAlertRadius, alertRadius);
+        alertSignalSpeed = Mathf.Max(MinimumAlertSignalSpeed, alertSignalSpeed);
+        alertSuspicion = Mathf.Clamp01(alertSuspicion);
     }
 }
