@@ -3,8 +3,13 @@ using UnityEngine;
 public class EnemyContext
 {
     private const float MinimumInputMagnitude = 0.0001f;
+    private const int MovementCastCapacity = 8;
+    private const int LineOfSightCastCapacity = 8;
+    private const float MovementSkinWidth = 0.02f;
 
     private readonly EnemyAI2D _owner;
+    private readonly RaycastHit2D[] _movementHits = new RaycastHit2D[MovementCastCapacity];
+    private readonly RaycastHit2D[] _lineOfSightHits = new RaycastHit2D[LineOfSightCastCapacity];
 
     public EnemyContext(
         EnemyAI2D owner,
@@ -175,8 +180,7 @@ public class EnemyContext
             return;
         }
 
-        direction.Normalize();
-        Rigidbody.MovePosition(Rigidbody.position + direction * speed * fixedDeltaTime);
+        MoveWithCollision(direction, speed * fixedDeltaTime);
     }
 
     public void MoveAlongPatrol(float speed, float fixedDeltaTime)
@@ -250,8 +254,7 @@ public class EnemyContext
             return;
         }
 
-        moveDirection.Normalize();
-        Rigidbody.MovePosition(Rigidbody.position + moveDirection * speed * fixedDeltaTime);
+        MoveWithCollision(moveDirection, speed * fixedDeltaTime);
     }
 
     public bool MoveInDirection(Vector2 direction, float distanceStep)
@@ -266,9 +269,50 @@ public class EnemyContext
             return false;
         }
 
+        return MoveWithCollision(direction, distanceStep);
+    }
+
+    private bool MoveWithCollision(Vector2 direction, float distance)
+    {
+        if (Rigidbody == null || distance <= 0f || direction.sqrMagnitude < MinimumInputMagnitude)
+        {
+            return false;
+        }
+
         Vector2 moveDirection = direction.normalized;
-        Rigidbody.MovePosition(Rigidbody.position + moveDirection * distanceStep);
+        float allowedDistance = GetCollisionLimitedDistance(moveDirection, distance);
+        if (allowedDistance <= 0f)
+        {
+            return false;
+        }
+
+        Rigidbody.MovePosition(Rigidbody.position + moveDirection * allowedDistance);
         return true;
+    }
+
+    private float GetCollisionLimitedDistance(Vector2 direction, float distance)
+    {
+        int hitCount = Rigidbody.Cast(direction, _movementHits, distance + MovementSkinWidth);
+        float allowedDistance = distance;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit2D hit = _movementHits[i];
+            if (!IsBlockingMovementHit(hit))
+            {
+                continue;
+            }
+
+            float hitDistance = Mathf.Max(0f, hit.distance - MovementSkinWidth);
+            allowedDistance = Mathf.Min(allowedDistance, hitDistance);
+        }
+
+        return allowedDistance;
+    }
+
+    private static bool IsBlockingMovementHit(RaycastHit2D hit)
+    {
+        return hit.collider != null && !hit.collider.isTrigger;
     }
 
     public void RotateViewDirection(float turnInput, float degreesPerSecond, float deltaTime)
@@ -448,7 +492,45 @@ public class EnemyContext
             return true;
         }
 
-        RaycastHit2D hit = Physics2D.Raycast(origin, toPlayer / distanceToPlayer, distanceToPlayer, ObstacleMask);
-        return hit.collider == null;
+        Vector2 directionToPlayer = toPlayer / distanceToPlayer;
+        int hitCount = Physics2D.RaycastNonAlloc(
+            origin,
+            directionToPlayer,
+            _lineOfSightHits,
+            distanceToPlayer,
+            ObstacleMask);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit2D hit = _lineOfSightHits[i];
+            if (IsBlockingLineOfSightHit(hit))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool IsBlockingLineOfSightHit(RaycastHit2D hit)
+    {
+        Collider2D collider = hit.collider;
+        if (collider == null || collider.isTrigger)
+        {
+            return false;
+        }
+
+        if (collider.GetComponentInParent<EnemyAI2D>() != null)
+        {
+            return false;
+        }
+
+        Transform hitTransform = collider.transform;
+        if (Player != null && (hitTransform == Player || hitTransform.IsChildOf(Player)))
+        {
+            return false;
+        }
+
+        return true;
     }
 }

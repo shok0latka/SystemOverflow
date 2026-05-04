@@ -5,6 +5,8 @@ using UnityEngine.Serialization;
 [RequireComponent(typeof(Rigidbody2D))]
 public class EnemyAI2D : MonoBehaviour
 {
+    private const float DefaultBodyColliderRadius = 0.35f;
+
     [Header("Identity")]
     [SerializeField] private string persistentId;
 
@@ -58,6 +60,7 @@ public class EnemyAI2D : MonoBehaviour
     {
         EnsurePersistentId(ensureUniqueInScene: false);
         ConfigureTopDownRigidbody();
+        ConfigureBodyCollider(allowCreate: true);
 
         if (!ValidateDependencies())
         {
@@ -110,6 +113,7 @@ public class EnemyAI2D : MonoBehaviour
     {
         EnsurePersistentId(ensureUniqueInScene: !Application.isPlaying);
         ConfigureTopDownRigidbody();
+        ConfigureBodyCollider(allowCreate: false);
 
         if (!Application.isPlaying)
         {
@@ -143,6 +147,7 @@ public class EnemyAI2D : MonoBehaviour
     private void Reset()
     {
         ConfigureTopDownRigidbody();
+        ConfigureBodyCollider(allowCreate: true);
     }
 
     private void OnDestroy()
@@ -312,8 +317,29 @@ public class EnemyAI2D : MonoBehaviour
             return;
         }
 
+        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.useFullKinematicContacts = true;
         rb.gravityScale = 0f;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         rb.constraints |= RigidbodyConstraints2D.FreezeRotation;
+    }
+
+    private void ConfigureBodyCollider(bool allowCreate)
+    {
+        Collider2D bodyCollider = GetComponent<Collider2D>();
+        if (bodyCollider == null)
+        {
+            if (!allowCreate)
+            {
+                return;
+            }
+
+            CircleCollider2D circleCollider = gameObject.AddComponent<CircleCollider2D>();
+            circleCollider.radius = DefaultBodyColliderRadius;
+            bodyCollider = circleCollider;
+        }
+
+        bodyCollider.isTrigger = false;
     }
 
     private void InitializeRuntime()
