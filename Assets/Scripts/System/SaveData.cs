@@ -1,10 +1,12 @@
 using System;
-using System.Collections.Generic;
 
 [Serializable]
 public class SaveData
 {
+    public bool hasCheckpoint;
     public string sceneName;
-    public PlayerSaveData player = new();
-    public List<EnemyRuntimeSaveData> enemies = new();
+    public float playerPositionX;
+    public float playerPositionY;
+    public float playerPositionZ;
+    public int playerHealth;
 }

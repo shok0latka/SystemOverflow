@@ -22,17 +22,12 @@ public class DialogManager : MonoBehaviour
     private string _currentFullText;
     private float _closeDelay = 0.3f; 
 
+    public bool IsDialogActive => dialogPanel != null && dialogPanel.activeSelf;
+    
     private void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
     }
 
     private void Start()
@@ -46,9 +41,15 @@ public class DialogManager : MonoBehaviour
         _canClose = false;
         _isTyping = false;
     }
-
+    
     public void ShowDialog(string text)
     {
+        if (IsDialogActive)
+        {
+            Debug.LogWarning("Диалог уже активен, новый вызов игнорируется");
+            return;
+        }
+        
         if (dialogPanel == null || dialogText == null)
         {
             Debug.LogError("DialogPanel или DialogText не назначены!");

@@ -1,3 +1,4 @@
+using UnityEditor.Purchasing;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -5,22 +6,11 @@ public class GameStateManager : MonoBehaviour
 {
     public static GameStateManager Instance;
 
+    public GameObject pause;
+
     private bool _isPaused;
 
     private Checkpoint _currentCheckpoint;
-
-    private void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
 
     private void Update()
     {
@@ -33,13 +23,20 @@ public class GameStateManager : MonoBehaviour
     public void TogglePause()
     {
         _isPaused = !_isPaused;
+        pause.SetActive(_isPaused);
         Time.timeScale = _isPaused ? 0f : 1f;
     }
 
     public void WinLevel()
     {
         Debug.Log("Уровень завершён");
-        // SceneManager.LoadScene("NextScene");
+    }
+
+    public void StartSceneProblem()
+    {
+        _isPaused = false;
+        pause.SetActive(false);
+        Time.timeScale = 1f;
     }
 
     public void UpdateCheckpoint(Checkpoint newCheckpoint)

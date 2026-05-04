@@ -1,212 +1,185 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class SaveSystem : MonoBehaviour
 {
-    private static bool _skipNextAutoLoad;
+    public static SaveSystem Instance;
 
-    [Header("Behavior")]
-    public bool autoLoadOnStart = true;
-    public bool autoSave = true;
-    public float autoSaveInterval = 5f;
-
-    [Header("Refs")]
-    public Transform player;
-
+    [Header("Settings")]
+    public bool autoSaveOnCheckpoint = true;
+    
     private string _savePath;
-    private float _saveTimer;
+    private SaveData _currentSave;
 
     private void Awake()
     {
-        _savePath = Path.Combine(Application.persistentDataPath, "save.json");
-    }
-
-    private void Start()
-    {
-        _saveTimer = Mathf.Max(0.2f, autoSaveInterval);
-
-        if (autoLoadOnStart && !ConsumeSkipNextAutoLoad())
+        if (Instance == null)
         {
-            LoadCurrentScene();
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
-    }
-
-    public static void SkipAutoLoadOnce()
-    {
-        _skipNextAutoLoad = true;
-    }
-
-    private void Update()
-    {
-        if (!autoSave)
+        else
         {
+            Destroy(gameObject);
             return;
         }
 
-        _saveTimer -= Time.unscaledDeltaTime;
-        if (_saveTimer > 0f)
-        {
-            return;
-        }
-
-        SaveCurrentScene();
-        _saveTimer = Mathf.Max(0.2f, autoSaveInterval);
+        _savePath = Path.Combine(Application.persistentDataPath, "checkpoint_save.json");
+        LoadSaveFromDisk();
     }
 
-    public void SaveCurrentScene()
+    public void SaveCheckpoint(string sceneName, Vector3 position)
     {
-        SaveData data = new SaveData();
-        data.sceneName = SceneManager.GetActiveScene().name;
-
-        Transform playerTransform = ResolvePlayer();
-        if (playerTransform != null)
+        Debug.Log("─────────────────────────────────");
+        Debug.Log($"[SaveSystem] 💾 СОХРАНЕНИЕ ЧЕКПОИНТА");
+        Debug.Log($"  • Сцена: {sceneName}");
+        Debug.Log($"  • Позиция: X={position.x:F2}, Y={position.y:F2}, Z={position.z:F2}");
+        
+        _currentSave = new SaveData
         {
-            data.player.posX = playerTransform.position.x;
-            data.player.posY = playerTransform.position.y;
+            sceneName = sceneName,
+            playerPositionX = position.x,
+            playerPositionY = position.y,
+            playerPositionZ = position.z,
+            hasCheckpoint = true
+        };
 
-            PlayerHealth health = playerTransform.GetComponent<PlayerHealth>();
-            data.player.currentHp = health != null ? health.CurrentHp : 0;
-        }
-
-        EnemyAI2D[] enemies = FindObjectsByType<EnemyAI2D>(FindObjectsSortMode.None);
-        foreach (EnemyAI2D enemy in enemies)
-        {
-            data.enemies.Add(enemy.CaptureRuntimeState());
-        }
-
-        try
-        {
-            string json = JsonUtility.ToJson(data, true);
-            File.WriteAllText(_savePath, json);
-        }
-        catch (Exception exception)
-        {
-            Debug.LogWarning("Save failed: " + exception.Message);
-        }
-    }
-
-    public void LoadCurrentScene()
-    {
-        if (!File.Exists(_savePath))
-        {
-            return;
-        }
-
-        SaveData data;
-        try
-        {
-            data = JsonUtility.FromJson<SaveData>(File.ReadAllText(_savePath));
-        }
-        catch (Exception exception)
-        {
-            Debug.LogWarning("Load failed: " + exception.Message);
-            return;
-        }
-
-        if (data == null || string.IsNullOrEmpty(data.sceneName))
-        {
-            return;
-        }
-
-        if (data.sceneName != SceneManager.GetActiveScene().name)
-        {
-            return;
-        }
-
-        Transform playerTransform = ResolvePlayer();
-        if (playerTransform != null && data.player != null)
-        {
-            Vector2 loadedPosition = new Vector2(data.player.posX, data.player.posY);
-            playerTransform.position = loadedPosition;
-
-            Rigidbody2D playerRb = playerTransform.GetComponent<Rigidbody2D>();
-            if (playerRb != null)
-            {
-                playerRb.position = loadedPosition;
-                playerRb.velocity = Vector2.zero;
-            }
-
-            PlayerHealth health = playerTransform.GetComponent<PlayerHealth>();
-            if (health != null)
-            {
-                int hpToRestore = data.player.currentHp <= 0 ? health.MaxHp : data.player.currentHp;
-                health.SetCurrentHp(hpToRestore);
-            }
-        }
-
-        EnemyAI2D[] sceneEnemies = FindObjectsByType<EnemyAI2D>(FindObjectsSortMode.None);
-        Dictionary<string, EnemyAI2D> enemyBySaveId = new Dictionary<string, EnemyAI2D>();
-        foreach (EnemyAI2D enemy in sceneEnemies)
-        {
-            enemyBySaveId[enemy.SaveId] = enemy;
-        }
-
-        if (data.enemies == null)
-        {
-            return;
-        }
-
-        foreach (EnemyRuntimeSaveData enemyData in data.enemies)
-        {
-            if (enemyData == null || string.IsNullOrEmpty(enemyData.saveId))
-            {
-                continue;
-            }
-
-            if (enemyBySaveId.TryGetValue(enemyData.saveId, out EnemyAI2D sceneEnemy))
-            {
-                sceneEnemy.RestoreRuntimeState(enemyData);
-            }
-        }
-    }
-
-    public void SavePlayer(GameObject playerObject)
-    {
-        if (playerObject != null)
-        {
-            player = playerObject.transform;
-        }
-
-        SaveCurrentScene();
-    }
-
-    public void LoadPlayer(GameObject playerObject)
-    {
-        if (playerObject != null)
-        {
-            player = playerObject.transform;
-        }
-
-        LoadCurrentScene();
-    }
-
-    private Transform ResolvePlayer()
-    {
+        // Сохраняем здоровье игрока если есть
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {
-            return player;
+            PlayerHealth health = player.GetComponent<PlayerHealth>();
+            if (health != null)
+            {
+                _currentSave.playerHealth = health.CurrentHp;
+                Debug.Log($"  • Здоровье игрока: {health.CurrentHp}/{health.MaxHp}");
+            }
+            else
+            {
+                Debug.LogWarning($"  • PlayerHealth не найден на игроке");
+            }
         }
-
-        PlayerMovement playerMovement = FindObjectOfType<PlayerMovement>();
-        if (playerMovement != null)
+        else
         {
-            player = playerMovement.transform;
+            Debug.LogWarning($"  • Игрок с тегом 'Player' не найден на сцене");
         }
 
-        return player;
+        SaveToDisk();
+        
+        Debug.Log($"[SaveSystem] ✅ Чекпоинт сохранён в файл: {_savePath}");
+        Debug.Log("─────────────────────────────────");
     }
 
-    private static bool ConsumeSkipNextAutoLoad()
+    public bool HasCheckpoint()
     {
-        if (!_skipNextAutoLoad)
+        return _currentSave != null && _currentSave.hasCheckpoint;
+    }
+
+    public void LoadCheckpoint()
+    {
+        if (!HasCheckpoint())
         {
-            return false;
+            Debug.LogError("Нет сохранённого чекпоинта!");
+            return;
         }
 
-        _skipNextAutoLoad = false;
-        return true;
+        string sceneToLoad = _currentSave.sceneName;
+        _pendingRespawnPosition = new Vector3(
+            _currentSave.playerPositionX,
+            _currentSave.playerPositionY,
+            _currentSave.playerPositionZ
+        );
+        _pendingHealth = _currentSave.playerHealth;
+
+        SceneManager.sceneLoaded += OnSceneLoadedForRespawn;
+        SceneManager.LoadScene(sceneToLoad);
+    }
+
+    private Vector3 _pendingRespawnPosition;
+    private int _pendingHealth;
+
+    private void OnSceneLoadedForRespawn(Scene scene, LoadSceneMode mode)
+    {
+        SceneManager.sceneLoaded -= OnSceneLoadedForRespawn;
+        
+        StartCoroutine(RespawnPlayerAfterLoad());
+    }
+
+    private System.Collections.IEnumerator RespawnPlayerAfterLoad()
+    {
+        yield return null;
+        
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            player.transform.position = _pendingRespawnPosition;
+            
+            Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                rb.position = _pendingRespawnPosition;
+                rb.velocity = Vector2.zero;
+            }
+            
+            PlayerHealth health = player.GetComponent<PlayerHealth>();
+            if (health != null && _pendingHealth > 0)
+            {
+                health.SetCurrentHp(_pendingHealth);
+            }
+            
+            Debug.Log("Игрок перемещён на чекпоинт");
+        }
+    }
+
+    public void SaveCurrentState()
+    {
+        string currentScene = SceneManager.GetActiveScene().name;
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        
+        if (player != null)
+        {
+            SaveCheckpoint(currentScene, player.transform.position);
+        }
+    }
+
+    private void SaveToDisk()
+    {
+        try
+        {
+            string json = JsonUtility.ToJson(_currentSave, true);
+            File.WriteAllText(_savePath, json);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"Ошибка сохранения: {e.Message}");
+        }
+    }
+
+    private void LoadSaveFromDisk()
+    {
+        if (File.Exists(_savePath))
+        {
+            try
+            {
+                string json = File.ReadAllText(_savePath);
+                _currentSave = JsonUtility.FromJson<SaveData>(json);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Ошибка загрузки: {e.Message}");
+                _currentSave = null;
+            }
+        }
+    }
+
+    public void DeleteSave()
+    {
+        _currentSave = null;
+        if (File.Exists(_savePath))
+        {
+            File.Delete(_savePath);
+        }
     }
 }
