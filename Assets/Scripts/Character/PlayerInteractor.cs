@@ -14,7 +14,6 @@ public class PlayerInteractor : MonoBehaviour
     private float _hackHoldTimer;
 
     public event Action<EnemyHackController> HackSucceeded;
-    public event Action<EnemyHackController> HackCommandMenuRequested;
 
     public void HandleUseInput()
     {
@@ -67,11 +66,6 @@ public class PlayerInteractor : MonoBehaviour
 
     private void BeginUseAttempt()
     {
-        if (TryRequestActiveHackCommandMenu())
-        {
-            return;
-        }
-
         if (TryLockHackTarget())
         {
             return;
@@ -121,19 +115,6 @@ public class PlayerInteractor : MonoBehaviour
         ResetHackAttempt();
     }
 
-    private bool TryRequestActiveHackCommandMenu()
-    {
-        EnemyHackController target = FindNearestActiveHack();
-        if (target == null)
-        {
-            return false;
-        }
-
-        ResetHackAttempt();
-        HackCommandMenuRequested?.Invoke(target);
-        return true;
-    }
-
     private bool TryLockHackTarget()
     {
         EnemyHackController target = FindNearestHackable();
@@ -151,11 +132,6 @@ public class PlayerInteractor : MonoBehaviour
     private EnemyHackController FindNearestHackable()
     {
         return FindNearestHackController(status => status.CanBegin);
-    }
-
-    private EnemyHackController FindNearestActiveHack()
-    {
-        return FindNearestHackController(status => status.IsActive);
     }
 
     private EnemyHackController FindNearestHackController(Func<HackStatusSnapshot, bool> statusPredicate)

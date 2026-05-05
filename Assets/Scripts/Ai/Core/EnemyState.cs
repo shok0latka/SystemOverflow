@@ -4,5 +4,6 @@ public enum EnemyState
     Chase,
     Attack,
     Hacked,
-    Search
+    Search,
+    RobotCombat
 }

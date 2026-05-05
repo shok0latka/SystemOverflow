@@ -51,6 +51,10 @@ public class EnemyStatusIndicator : MonoBehaviour
                 statusText.text = "S";
                 statusText.color = new Color(0.45f, 0.95f, 1f);
                 break;
+            case EnemyState.RobotCombat:
+                statusText.text = "R";
+                statusText.color = new Color(1f, 0.45f, 0.9f);
+                break;
         }
     }
 

@@ -293,6 +293,7 @@ MonoBehaviour:
   persistentId: 39cc3ce1fcb84b33933b35981b98bd05
   enemyConfig: {fileID: 11400000, guid: 52f4b22d42c540519f08e3b2ce1e6e05, type: 2}
   rb: {fileID: 24699631}
+  health: {fileID: 0}
   patrolPoints:
   - {fileID: 1679119209}
   - {fileID: 1851068916}
@@ -423,6 +424,7 @@ MonoBehaviour:
   persistentId: f47caac6988446279c63c5407ecd61a2
   enemyConfig: {fileID: 11400000, guid: 52f4b22d42c540519f08e3b2ce1e6e05, type: 2}
   rb: {fileID: 381120904}
+  health: {fileID: 0}
   patrolPoints:
   - {fileID: 2129246141}
   - {fileID: 623397462}
@@ -1242,17 +1244,52 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7066332889346522350, guid: 79143a99220b2ae44a5c3f4fb1017b05, type: 3}
   m_PrefabInstance: {fileID: 1603196046737831002}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &880516746 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1894981323200119085, guid: 79143a99220b2ae44a5c3f4fb1017b05, type: 3}
-  m_PrefabInstance: {fileID: 1603196046737831002}
+--- !u!1 &910000101
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 910000102}
+  - component: {fileID: 910000103}
+  m_Layer: 0
+  m_Name: AiLevelFeatureFlags
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &910000102
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910000101}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &910000103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910000101}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a300f5218e23514e87d1302d6b093ea, type: 3}
+  m_Script: {fileID: 11500000, guid: 8d4f8919483545149bbd2c52759e2d6c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enemiesCanAttackEnemies: 0
+  enemiesCanCommunicate: 0
 --- !u!1 &934337468
 GameObject:
   m_ObjectHideFlags: 0
@@ -2357,8 +2394,6 @@ MonoBehaviour:
   system: {fileID: 11400000, guid: 071bc4cf5e5830e41a1d03988919040c, type: 2}
   openOnStart: 0
   pauseWhileEditing: 1
-  playerInteractor: {fileID: 880516746}
-  autoFindPlayerInteractor: 1
 --- !u!114 &1044257849
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2902,6 +2937,7 @@ MonoBehaviour:
   persistentId: b25c49053c274cb387bc46a7d8f35b2b
   enemyConfig: {fileID: 11400000, guid: 52f4b22d42c540519f08e3b2ce1e6e05, type: 2}
   rb: {fileID: 1395804616}
+  health: {fileID: 0}
   patrolPoints:
   - {fileID: 623397462}
   - {fileID: 1679119209}
@@ -7439,6 +7475,7 @@ MonoBehaviour:
   persistentId: 12e3a28f446947708b784d8670c1639c
   enemyConfig: {fileID: 11400000, guid: 52f4b22d42c540519f08e3b2ce1e6e05, type: 2}
   rb: {fileID: 1952039866}
+  health: {fileID: 0}
   patrolPoints:
   - {fileID: 1851068916}
   - {fileID: 2129246141}
@@ -7749,3 +7786,4 @@ SceneRoots:
   - {fileID: 1164958872}
   - {fileID: 880455710}
   - {fileID: 642934857}
+  - {fileID: 910000102}

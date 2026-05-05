@@ -42,12 +42,15 @@ public class EnemyContext
     public PlayerHealth PlayerHealth { get; private set; }
     public LayerMask ObstacleMask { get; set; }
     public EnemyHackController HackController { get; private set; }
+    public EnemyHealth Health { get; private set; }
 
     public SuspicionMeter Suspicion { get; }
 
     public bool CanSeePlayer { get; private set; }
     public float DistanceToPlayer { get; private set; } = float.MaxValue;
     public Vector2 LastKnownPlayerPosition { get; set; }
+    public bool HasActiveSearchTarget { get; private set; }
+    public Vector2 ActiveSearchTargetPosition { get; private set; }
     public float TimeSinceSeenPlayer { get; set; }
     public Vector2 ViewDirection { get; private set; } = Vector2.right;
     public float CloseVisionRadius => Config.attackRadius;
@@ -57,6 +60,11 @@ public class EnemyContext
     public int PatrolIndex { get; set; }
     public float AttackCooldownTimer { get; set; }
     public float ReturnTimer { get; set; }
+    public EnemyAI2D RobotCombatTarget { get; private set; }
+    public bool HasRobotCombatTarget => IsValidEnemyTarget(RobotCombatTarget);
+    public Vector2 RobotCombatTargetPosition => HasRobotCombatTarget
+        ? RobotCombatTarget.Position
+        : Position;
 
     public void SetConfig(EnemyConfig config)
     {
@@ -81,6 +89,35 @@ public class EnemyContext
     public void SetHackController(EnemyHackController hackController)
     {
         HackController = hackController;
+    }
+
+    public void SetHealth(EnemyHealth health)
+    {
+        Health = health;
+    }
+
+    public void SetRobotCombatTarget(EnemyAI2D target)
+    {
+        RobotCombatTarget = IsValidEnemyTarget(target) ? target : null;
+        ClearPath();
+    }
+
+    public void ClearRobotCombatTarget()
+    {
+        RobotCombatTarget = null;
+        ClearPath();
+    }
+
+    public void SetActiveSearchTarget(Vector2 target)
+    {
+        ActiveSearchTargetPosition = target;
+        HasActiveSearchTarget = true;
+    }
+
+    public void ClearActiveSearchTarget()
+    {
+        ActiveSearchTargetPosition = default;
+        HasActiveSearchTarget = false;
     }
 
     public void EnsurePlayerReference()
@@ -475,6 +512,100 @@ public class EnemyContext
         AttackCooldownTimer = Config.attackCooldown;
         PlayerHealth.TakeDamage(Config.attackDamage);
         return true;
+    }
+
+    public bool MoveAlongPathToRobotCombatTarget(float speed, float fixedDeltaTime)
+    {
+        if (!HasRobotCombatTarget)
+        {
+            return false;
+        }
+
+        return MoveAlongPathTo(RobotCombatTarget.Position, speed, fixedDeltaTime);
+    }
+
+    public bool IsRobotCombatTargetInAttackRange()
+    {
+        return HasRobotCombatTarget &&
+            Vector2.Distance(Position, RobotCombatTarget.Position) <= Config.attackRadius;
+    }
+
+    public bool TryAttackRobotCombatTarget()
+    {
+        return TryAttackEnemy(RobotCombatTarget);
+    }
+
+    public bool TryAttackNearestEnemy()
+    {
+        return TryAttackEnemy(FindNearestEnemyTarget());
+    }
+
+    private bool TryAttackEnemy(EnemyAI2D target)
+    {
+        if (!AiLevelFeatureFlags.EnemiesCanAttackEnemies)
+        {
+            return false;
+        }
+
+        if (!IsValidEnemyTarget(target))
+        {
+            return false;
+        }
+
+        if (AttackCooldownTimer > 0f)
+        {
+            return false;
+        }
+
+        if (Vector2.Distance(Position, target.Position) > Config.attackRadius)
+        {
+            return false;
+        }
+
+        AttackCooldownTimer = Config.attackCooldown;
+        return target.Health.TakeDamage(Config.attackDamage, _owner);
+    }
+
+    private EnemyAI2D FindNearestEnemyTarget()
+    {
+        EnemyAI2D[] enemies = Object.FindObjectsByType<EnemyAI2D>(FindObjectsSortMode.None);
+        if (enemies == null || enemies.Length == 0)
+        {
+            return null;
+        }
+
+        Vector2 position = Position;
+        float maxSqrDistance = Config.attackRadius * Config.attackRadius;
+        float nearestSqrDistance = maxSqrDistance;
+        EnemyAI2D nearestEnemy = null;
+
+        foreach (EnemyAI2D enemy in enemies)
+        {
+            if (!IsValidEnemyTarget(enemy))
+            {
+                continue;
+            }
+
+            float sqrDistance = (enemy.Position - position).sqrMagnitude;
+            if (sqrDistance > nearestSqrDistance)
+            {
+                continue;
+            }
+
+            nearestSqrDistance = sqrDistance;
+            nearestEnemy = enemy;
+        }
+
+        return nearestEnemy;
+    }
+
+    private bool IsValidEnemyTarget(EnemyAI2D target)
+    {
+        return target != null &&
+            target != _owner &&
+            target.isActiveAndEnabled &&
+            target.Health != null &&
+            target.Health.IsAlive;
     }
 
     public void StopMovement()

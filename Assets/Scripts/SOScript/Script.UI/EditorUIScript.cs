@@ -20,7 +20,8 @@ public class ScriptEditorUI : MonoBehaviour
         HackCommand.MoveRight,
         HackCommand.RotateCounterClockwise,
         HackCommand.RotateClockwise,
-        HackCommand.Interact
+        HackCommand.Interact,
+        HackCommand.Attack
     };
 
     [SerializeField] UIDocument document;
@@ -28,17 +29,18 @@ public class ScriptEditorUI : MonoBehaviour
     [SerializeField] OverloadSystem system;
     [SerializeField] bool openOnStart;
     [SerializeField] bool pauseWhileEditing = true;
-    [SerializeField] PlayerInteractor playerInteractor;
-    [SerializeField] bool autoFindPlayerInteractor = true;
 
     Label resultLabel;
+    VisualElement editorRoot;
+    VisualElement toolbar;
+    Button hackedRobotButton;
     Vector3 startMouse;
     float startLeft;
     float startTop;
     EnemyHackController boundTarget;
-    PlayerInteractor subscribedInteractor;
     float previousTimeScale = 1f;
     bool timePausedForEditing;
+    bool editorVisible;
 
     float minZoom;
     float zoom = 1f;
@@ -55,7 +57,11 @@ public class ScriptEditorUI : MonoBehaviour
         if (style != null)
             root.styleSheets.Add(style);
 
-        SetEditorVisible(openOnStart);
+        root.style.display = DisplayStyle.Flex;
+        root.pickingMode = PickingMode.Ignore;
+        editorRoot = root.Q("SO_Script_Editor");
+        toolbar = root.Q("Toolbar");
+
         var elements = root.Q("Elements");
         var editor = root.Q("Editor");
 
@@ -63,14 +69,24 @@ public class ScriptEditorUI : MonoBehaviour
         BuildConsole(editor);
         BuildElements(elements, editor);
         BuildToolbar(root);
-        SubscribeToHackEvents();
+        BuildHackedRobotButton(root);
+        SetEditorVisible(openOnStart);
 
         // TestConsole();
     }
 
+    void Update()
+    {
+        if (boundTarget != null && !boundTarget.GetHackStatus().IsActive)
+        {
+            CloseEditor(clearQueuedCommands: false, cancelHack: false);
+        }
+
+        RefreshHackedRobotButton();
+    }
+
     void OnDestroy()
     {
-        UnsubscribeFromHackEvents();
         CloseEditor(clearQueuedCommands: false, cancelHack: false);
     }
 
@@ -332,6 +348,40 @@ public class ScriptEditorUI : MonoBehaviour
         deleteButton.clicked += DeleteSelected;
     }
 
+    void BuildHackedRobotButton(VisualElement root)
+    {
+        hackedRobotButton = root.Q<Button>("HackedRobotAccess");
+        if (hackedRobotButton == null)
+        {
+            hackedRobotButton = new Button(OpenActiveHackEditor)
+            {
+                name = "HackedRobotAccess",
+                text = "Robot",
+                tooltip = "Open hacked robot command menu"
+            };
+
+            root.Add(hackedRobotButton);
+        }
+        else
+        {
+            hackedRobotButton.clicked += OpenActiveHackEditor;
+        }
+
+        hackedRobotButton.pickingMode = PickingMode.Position;
+        hackedRobotButton.style.position = Position.Absolute;
+        hackedRobotButton.style.top = 12;
+        hackedRobotButton.style.right = 12;
+        hackedRobotButton.style.width = 88;
+        hackedRobotButton.style.height = 36;
+        hackedRobotButton.style.fontSize = 16;
+        hackedRobotButton.style.unityFontStyleAndWeight = FontStyle.Bold;
+        hackedRobotButton.style.borderTopLeftRadius = 6;
+        hackedRobotButton.style.borderTopRightRadius = 6;
+        hackedRobotButton.style.borderBottomLeftRadius = 6;
+        hackedRobotButton.style.borderBottomRightRadius = 6;
+        RefreshHackedRobotButton();
+    }
+
     void BuildConsole(VisualElement editor)
     {
         editor.Add(UIConsole.Instance);
@@ -419,39 +469,6 @@ public class ScriptEditorUI : MonoBehaviour
         CloseEditor(clearQueuedCommands: false, cancelHack: false);
     }
 
-    void SubscribeToHackEvents()
-    {
-        if (subscribedInteractor != null)
-        {
-            return;
-        }
-
-        if (playerInteractor == null && autoFindPlayerInteractor)
-        {
-            playerInteractor = FindFirstObjectByType<PlayerInteractor>();
-        }
-
-        if (playerInteractor == null)
-        {
-            Debug.LogWarning("ScriptEditorUI could not find PlayerInteractor; enemy hack menu requests will not open the editor.", this);
-            return;
-        }
-
-        subscribedInteractor = playerInteractor;
-        subscribedInteractor.HackCommandMenuRequested += OpenForHackTarget;
-    }
-
-    void UnsubscribeFromHackEvents()
-    {
-        if (subscribedInteractor == null)
-        {
-            return;
-        }
-
-        subscribedInteractor.HackCommandMenuRequested -= OpenForHackTarget;
-        subscribedInteractor = null;
-    }
-
     void OpenForHackTarget(EnemyHackController target)
     {
         if (target == null)
@@ -472,6 +489,18 @@ public class ScriptEditorUI : MonoBehaviour
         SetEditorVisible(true);
         resultLabel.text = $"Result: Target {boundTarget.name}";
         UIConsole.Instance.Write($"Command target: {boundTarget.name}", MessageType.Info);
+    }
+
+    void OpenActiveHackEditor()
+    {
+        EnemyHackController target = EnemyHackController.ActiveHack;
+        if (!IsActiveHackTarget(target))
+        {
+            RefreshHackedRobotButton();
+            return;
+        }
+
+        OpenForHackTarget(target);
     }
 
     void CancelEditor()
@@ -536,6 +565,44 @@ public class ScriptEditorUI : MonoBehaviour
             return;
         }
 
-        document.rootVisualElement.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+        editorVisible = visible;
+
+        VisualElement root = document.rootVisualElement;
+        root.style.display = DisplayStyle.Flex;
+        root.pickingMode = PickingMode.Ignore;
+
+        editorRoot ??= root.Q("SO_Script_Editor");
+        toolbar ??= root.Q("Toolbar");
+
+        SetElementVisible(editorRoot, visible);
+        SetElementVisible(toolbar, visible);
+        RefreshHackedRobotButton();
+    }
+
+    void SetElementVisible(VisualElement element, bool visible)
+    {
+        if (element == null)
+        {
+            return;
+        }
+
+        element.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+        element.pickingMode = visible ? PickingMode.Position : PickingMode.Ignore;
+    }
+
+    void RefreshHackedRobotButton()
+    {
+        if (hackedRobotButton == null)
+        {
+            return;
+        }
+
+        bool showButton = !editorVisible && IsActiveHackTarget(EnemyHackController.ActiveHack);
+        hackedRobotButton.style.display = showButton ? DisplayStyle.Flex : DisplayStyle.None;
+    }
+
+    static bool IsActiveHackTarget(EnemyHackController target)
+    {
+        return target != null && target.GetHackStatus().IsActive;
     }
 }

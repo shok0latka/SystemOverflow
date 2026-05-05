@@ -12,6 +12,8 @@ public class EnemyConfig : ScriptableObject
     private const float MinimumAttackRadius = 1f;
     private const float MinimumAttackCooldown = 0.05f;
     private const int MinimumAttackDamage = 0;
+    private const int MinimumRank = 1;
+    private const int MinimumMaxHp = 1;
     private const float MinimumInteractRadius = 0.05f;
     private const float MinimumHackDuration = 0.2f;
     private const float MinimumHackResistance = 0f;
@@ -23,43 +25,68 @@ public class EnemyConfig : ScriptableObject
     private const int MinimumPathMaxSearchNodes = 1024;
 
     [Header("Movement")]
+    [Min(MinimumSpeed)]
     public float patrolSpeed = 2f;
+    [Min(MinimumSpeed)]
     public float chaseSpeed = 3.2f;
 
     [Header("Perception")]
     [FormerlySerializedAs("detectRadius")]
+    [Min(MinimumVisionRadius)]
     public float visionRadius = 6f;
-    [Range(1f, 360f)] public float visionConeAngleDegrees = 90f;
+    [Range(MinimumVisionConeAngleDegrees, MaximumVisionConeAngleDegrees)]
+    public float visionConeAngleDegrees = 90f;
+    [Min(MinimumDuration)]
     public float loseSightTime = 1.2f;
+    [Min(MinimumDuration)]
     public float suspicionGainPerSecond = 0.9f;
+    [Min(MinimumDuration)]
     public float suspicionDecayPerSecond = 0.4f;
     [Range(0f, 1f)] public float suspicionThreshold = 0.6f;
 
     [Header("Behavior")]
     [Range(0f, 1f)] public float aggressiveness = 0.5f;
-    public float searchDuration = 3.5f;
+    [Min(MinimumDuration)]
+    public float searchPointOffset = 1.25f;
+    [Min(MinimumDuration)]
+    public float searchPointStuckDuration = 1f;
 
     [Header("Interaction")]
+    [Min(MinimumInteractRadius)]
     public float interactRadius = 0.75f;
 
-    [Header("Attack")]
+    [Header("Combat")]
+    [Min(MinimumRank)]
+    public int rank = 1;
+    [Min(MinimumMaxHp)]
+    public int maxHp = 3;
+    [Min(MinimumAttackRadius)]
     public float attackRadius = 1.2f;
+    [Min(MinimumAttackCooldown)]
     public float attackCooldown = 0.8f;
+    [Min(MinimumAttackDamage)]
     public int attackDamage = 1;
 
     [Header("Hack")]
     [FormerlySerializedAs("baseHackDuration")]
+    [Min(MinimumHackDuration)]
     public float hackDuration = 40f;
-    [Range(0f, 0.95f)] public float hackResistance = 0.2f;
+    [Range(MinimumHackResistance, MaximumHackResistance)]
+    public float hackResistance = 0.2f;
 
     [Header("Alert")]
+    [Min(MinimumAlertRadius)]
     public float alertRadius = 5f;
+    [Min(MinimumAlertSignalSpeed)]
     public float alertSignalSpeed = 2f;
     [Range(0f, 1f)] public float alertSuspicion = 0.45f;
 
     [Header("Pathfinding")]
+    [Min(MinimumPathCellSize)]
     public float pathCellSize = 0.5f;
+    [Min(MinimumPathRefreshInterval)]
     public float pathRefreshInterval = 0.2f;
+    [Min(MinimumPathMaxSearchNodes)]
     public int pathMaxSearchNodes = 1024;
 
     private void OnEnable()
@@ -88,9 +115,12 @@ public class EnemyConfig : ScriptableObject
         suspicionThreshold = Mathf.Clamp01(suspicionThreshold);
 
         aggressiveness = Mathf.Clamp01(aggressiveness);
-        searchDuration = Mathf.Max(MinimumDuration, searchDuration);
+        searchPointOffset = Mathf.Max(MinimumDuration, searchPointOffset);
+        searchPointStuckDuration = Mathf.Max(MinimumDuration, searchPointStuckDuration);
         interactRadius = Mathf.Max(MinimumInteractRadius, interactRadius);
 
+        rank = Mathf.Max(MinimumRank, rank);
+        maxHp = Mathf.Max(MinimumMaxHp, maxHp);
         attackRadius = Mathf.Max(MinimumAttackRadius, attackRadius);
         attackCooldown = Mathf.Max(MinimumAttackCooldown, attackCooldown);
         attackDamage = Mathf.Max(MinimumAttackDamage, attackDamage);

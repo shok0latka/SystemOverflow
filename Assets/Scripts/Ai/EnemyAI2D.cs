@@ -16,6 +16,7 @@ public class EnemyAI2D : MonoBehaviour
 
     [Header("Refs")]
     [SerializeField] private Rigidbody2D rb;
+    [SerializeField] private EnemyHealth health;
     [SerializeField] private Transform[] patrolPoints;
     [SerializeField] private Transform player;
 
@@ -54,6 +55,10 @@ public class EnemyAI2D : MonoBehaviour
 
     public string SaveId => persistentId;
     public EnemyState CurrentState => _stateMachine?.CurrentState ?? currentState;
+    public EnemyHealth Health => health;
+    public int Rank => enemyConfig != null ? enemyConfig.rank : 1;
+    public Vector2 Position => _context?.Position ?? (Vector2)transform.position;
+    public bool IsAlive => health == null || health.IsAlive;
     private float DefaultHackDuration => enemyConfig != null ? enemyConfig.hackDuration : 0f;
 
     private void Awake()
@@ -68,6 +73,7 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         ConfigureHackController(allowCreate: true);
+        ConfigureHealth(allowCreate: true, resetCurrentHp: true);
         if (showEnemyDebugIndicators)
         {
             ConfigureStatusIndicator(allowCreate: true);
@@ -127,6 +133,7 @@ public class EnemyAI2D : MonoBehaviour
 
         _bindingsDirty = true;
         ConfigureHackController(allowCreate: false);
+        ConfigureHealth(allowCreate: false, resetCurrentHp: false);
         if (showEnemyDebugIndicators)
         {
             ConfigureStatusIndicator(allowCreate: false);
@@ -274,6 +281,48 @@ public class EnemyAI2D : MonoBehaviour
         SyncDebugRuntime();
     }
 
+    public void HandleRobotAttacked(EnemyAI2D attacker)
+    {
+        if (!AiLevelFeatureFlags.EnemiesCanAttackEnemies)
+        {
+            return;
+        }
+
+        if (attacker == null || attacker == this || !attacker.IsAlive || !isActiveAndEnabled)
+        {
+            return;
+        }
+
+        if (_context == null || _stateMachine == null)
+        {
+            if (!ValidateDependencies())
+            {
+                return;
+            }
+
+            ConfigureHackController(allowCreate: true);
+            ConfigureHealth(allowCreate: true, resetCurrentHp: false);
+            InitializeRuntime();
+            ApplyContextBindings(force: true);
+        }
+
+        if (CurrentState == EnemyState.Hacked)
+        {
+            return;
+        }
+
+        _context.SetRobotCombatTarget(attacker);
+        _context.ResetReturnTimer();
+        _stateMachine.TransitionTo(EnemyState.RobotCombat);
+        UpdateViewDirectionForCurrentState(_stateMachine.CurrentState);
+        SyncDebugRuntime();
+    }
+
+    public void HandleRobotDestroyed()
+    {
+        _hackController?.TryCancelHack();
+    }
+
     private bool ValidateDependencies()
     {
         ConfigureTopDownRigidbody();
@@ -349,8 +398,10 @@ public class EnemyAI2D : MonoBehaviour
             _stateMachine.StateChanged -= HandleStateChanged;
         }
 
+        ConfigureHealth(allowCreate: true, resetCurrentHp: health == null);
         _context = new EnemyContext(this, enemyConfig, rb, patrolPoints, player, obstacleMask);
         _context.SetHackController(_hackController);
+        _context.SetHealth(health);
         _context.EnsurePlayerReference();
 
         if (player == null && _context.Player != null)
@@ -370,6 +421,7 @@ public class EnemyAI2D : MonoBehaviour
         _stateMachine.Register(new AttackState(_context, _stateMachine));
         _stateMachine.Register(new HackedState(_context, _stateMachine));
         _stateMachine.Register(new SearchState(_context, _stateMachine));
+        _stateMachine.Register(new RobotCombatState(_context, _stateMachine));
         _stateMachine.Initialize(EnemyState.Patrol);
         UpdateViewDirectionForCurrentState(_stateMachine.CurrentState);
     }
@@ -396,6 +448,12 @@ public class EnemyAI2D : MonoBehaviour
         _context.SetPatrolPoints(patrolPoints);
         _context.ObstacleMask = obstacleMask;
         _context.SetHackController(_hackController);
+        if (configChanged || force || _bindingsDirty)
+        {
+            ConfigureHealth(allowCreate: true, resetCurrentHp: false);
+        }
+
+        _context.SetHealth(health);
 
         if (playerChanged || force || _bindingsDirty)
         {
@@ -496,6 +554,21 @@ public class EnemyAI2D : MonoBehaviour
         }
     }
 
+    private void ConfigureHealth(bool allowCreate, bool resetCurrentHp)
+    {
+        health = EnsureHealthComponent(allowCreate);
+        if (health == null || enemyConfig == null)
+        {
+            return;
+        }
+
+        health.Configure(this, enemyConfig.maxHp, resetCurrentHp);
+        if (_context != null)
+        {
+            _context.SetHealth(health);
+        }
+    }
+
     private void ConfigureVisionOutline(bool allowCreate)
     {
         _visionOutline = EnsureVisionOutlineComponent(allowCreate);
@@ -585,6 +658,27 @@ public class EnemyAI2D : MonoBehaviour
         return _hackController;
     }
 
+    private EnemyHealth EnsureHealthComponent(bool allowCreate)
+    {
+        if (health != null)
+        {
+            return health;
+        }
+
+        health = GetComponent<EnemyHealth>();
+        if (health == null)
+        {
+            if (!allowCreate)
+            {
+                return null;
+            }
+
+            health = gameObject.AddComponent<EnemyHealth>();
+        }
+
+        return health;
+    }
+
     private void SyncHackStateFromController()
     {
         if (_hackController == null || _stateMachine == null)
@@ -618,7 +712,8 @@ public class EnemyAI2D : MonoBehaviour
         bool shouldShow = _context != null &&
             currentState != EnemyState.Hacked &&
             currentState != EnemyState.Chase &&
-            currentState != EnemyState.Attack;
+            currentState != EnemyState.Attack &&
+            currentState != EnemyState.RobotCombat;
 
         _suspicionIndicator.RefreshSuspicion(
             currentSuspicion,
@@ -652,6 +747,11 @@ public class EnemyAI2D : MonoBehaviour
 
     private void TrySendEnemyAlert()
     {
+        if (!AiLevelFeatureFlags.EnemiesCanCommunicate)
+        {
+            return;
+        }
+
         if (_context == null || enemyConfig == null || enemyConfig.alertRadius <= 0f)
         {
             return;
@@ -713,7 +813,8 @@ public class EnemyAI2D : MonoBehaviour
         EnemyState state = CurrentState;
         return state != EnemyState.Chase &&
             state != EnemyState.Attack &&
-            state != EnemyState.Hacked;
+            state != EnemyState.Hacked &&
+            state != EnemyState.RobotCombat;
     }
 
     private void UpdateViewDirectionForCurrentState(EnemyState state)
@@ -742,8 +843,17 @@ public class EnemyAI2D : MonoBehaviour
                     _context.UpdateViewDirectionTowards(_context.Player.position);
                 }
                 break;
+            case EnemyState.RobotCombat:
+                if (_context.HasRobotCombatTarget)
+                {
+                    _context.UpdateViewDirectionTowards(_context.RobotCombatTargetPosition);
+                }
+                break;
             case EnemyState.Search:
-                _context.UpdateViewDirectionTowards(_context.LastKnownPlayerPosition);
+                Vector2 searchTarget = _context.HasActiveSearchTarget
+                    ? _context.ActiveSearchTargetPosition
+                    : _context.LastKnownPlayerPosition;
+                _context.UpdateViewDirectionTowards(searchTarget);
                 break;
         }
     }

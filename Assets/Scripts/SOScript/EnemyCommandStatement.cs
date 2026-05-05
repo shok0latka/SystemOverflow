@@ -100,6 +100,7 @@ public sealed class EnemyCommandStatement : IStatement
             HackCommand.RotateCounterClockwise => "Rotate Counterclockwise",
             HackCommand.RotateClockwise => "Rotate Clockwise",
             HackCommand.Interact => "Interact",
+            HackCommand.Attack => "Attack",
             _ => "Enemy Command"
         };
     }

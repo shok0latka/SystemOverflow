@@ -27,6 +27,7 @@ public class EnemyHackController : MonoBehaviour, IHackable
     public int QueuedCommandCount => _queuedCommands.Count;
     public int MaxQueuedCommands => maxQueuedCommands;
     public float CommandStepDuration => commandStepDuration;
+    public static EnemyHackController ActiveHack { get; private set; }
 
     private void Awake()
     {
@@ -50,6 +51,22 @@ public class EnemyHackController : MonoBehaviour, IHackable
         if (Application.isPlaying)
         {
             EnsureIndicators(allowCreate: false);
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (_isActive || ActiveHack == this)
+        {
+            EndActiveHack();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (_isActive || ActiveHack == this)
+        {
+            EndActiveHack();
         }
     }
 
@@ -99,6 +116,7 @@ public class EnemyHackController : MonoBehaviour, IHackable
         float duration = request.Duration > 0f
             ? request.Duration
             : defaultDuration;
+        ReplaceCurrentActiveHack();
         StartActiveHack(duration, duration);
         return HackBeginResult.Success(duration);
     }
@@ -123,6 +141,7 @@ public class EnemyHackController : MonoBehaviour, IHackable
         }
 
         float safeDuration = Mathf.Max(MinimumHackDuration, duration, timeRemaining);
+        ReplaceCurrentActiveHack();
         StartActiveHack(safeDuration, timeRemaining);
         return true;
     }
@@ -243,6 +262,7 @@ public class EnemyHackController : MonoBehaviour, IHackable
 
     private void StartActiveHack(float duration, float timeRemaining)
     {
+        ActiveHack = this;
         _isActive = true;
         _activeDuration = Mathf.Max(MinimumHackDuration, duration);
         _timeRemaining = Mathf.Clamp(timeRemaining, 0f, _activeDuration);
@@ -257,6 +277,21 @@ public class EnemyHackController : MonoBehaviour, IHackable
         _timeRemaining = 0f;
         ClearAttemptProgress();
         ClearCommands();
+
+        if (ActiveHack == this)
+        {
+            ActiveHack = null;
+        }
+    }
+
+    private void ReplaceCurrentActiveHack()
+    {
+        if (ActiveHack == null || ActiveHack == this)
+        {
+            return;
+        }
+
+        ActiveHack.TryCancelHack();
     }
 
     private void TickActiveHack(float deltaTime)

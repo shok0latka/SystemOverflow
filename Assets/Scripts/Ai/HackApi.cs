@@ -27,6 +27,7 @@ public enum HackCommand
     RotateCounterClockwise,
     RotateClockwise,
     Interact,
+    Attack,
 }
 
 public readonly struct HackQueuedCommand

@@ -23,6 +23,7 @@ public class HackedState : EnemyStateBase
         Context.ResetReturnTimer();
         Context.AttackCooldownTimer = 0f;
         Context.TimeSinceSeenPlayer = 0f;
+        Context.ClearRobotCombatTarget();
         Context.ClearPath();
         Context.StopMovement();
     }
@@ -83,6 +84,16 @@ public class HackedState : EnemyStateBase
                 if (!_activeInteractExecuted)
                 {
                     Context.TryInteractWithNearestInteractable();
+                    _activeInteractExecuted = true;
+                }
+
+                Context.StopMovement();
+                ResetActiveCommand();
+                return;
+            case HackCommand.Attack:
+                if (!_activeInteractExecuted)
+                {
+                    Context.TryAttackNearestEnemy();
                     _activeInteractExecuted = true;
                 }
 
