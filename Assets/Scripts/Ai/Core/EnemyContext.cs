@@ -327,14 +327,18 @@ public class EnemyContext
         }
 
         Vector2 moveDirection = direction.normalized;
-        float allowedDistance = GetCollisionLimitedDistance(moveDirection, distance);
-        if (allowedDistance <= 0f)
+        if (TryGetMovementBlocker(
+                moveDirection,
+                distance,
+                out Collider2D blocker,
+                out float blockerDistance) &&
+            IsOverlapBlockerDistance(blockerDistance) &&
+            TrySeparateFromEnemy(blocker, moveDirection, distance))
         {
-            return false;
+            return true;
         }
 
-        Rigidbody.MovePosition(Rigidbody.position + moveDirection * allowedDistance);
-        return true;
+        return TryMoveWithCollision(moveDirection, distance);
     }
 
     private bool MoveWithCollisionAvoidance(Vector2 direction, float distance)
@@ -346,8 +350,19 @@ public class EnemyContext
 
         Vector2 moveDirection = direction.normalized;
         bool blockedByEnemy =
-            TryGetMovementBlocker(moveDirection, distance, out Collider2D blocker) &&
+            TryGetMovementBlocker(
+                moveDirection,
+                distance,
+                out Collider2D blocker,
+                out float blockerDistance) &&
             IsEnemyCollider(blocker);
+
+        if (blockedByEnemy &&
+            IsOverlapBlockerDistance(blockerDistance) &&
+            TrySeparateFromEnemy(blocker, moveDirection, distance))
+        {
+            return true;
+        }
 
         if (blockedByEnemy && TryStepAroundEnemy(moveDirection, distance))
         {
@@ -374,9 +389,14 @@ public class EnemyContext
             || MoveWithCollision(-side, distance);
     }
 
-    private bool TryGetMovementBlocker(Vector2 direction, float distance, out Collider2D blocker)
+    private bool TryGetMovementBlocker(
+        Vector2 direction,
+        float distance,
+        out Collider2D blocker,
+        out float blockerDistance)
     {
         blocker = null;
+        blockerDistance = float.MaxValue;
 
         if (Rigidbody == null || direction.sqrMagnitude < MinimumInputMagnitude)
         {
@@ -396,6 +416,7 @@ public class EnemyContext
 
             nearestDistance = hit.distance;
             blocker = hit.collider;
+            blockerDistance = hit.distance;
         }
 
         return blocker != null;
@@ -407,7 +428,61 @@ public class EnemyContext
         return enemy != null && enemy != _owner;
     }
 
-    private float GetCollisionLimitedDistance(Vector2 direction, float distance)
+    private bool TrySeparateFromEnemy(Collider2D blocker, Vector2 fallbackDirection, float distance)
+    {
+        EnemyAI2D enemy = blocker != null ? blocker.GetComponentInParent<EnemyAI2D>() : null;
+        if (enemy == null || enemy == _owner)
+        {
+            return false;
+        }
+
+        Vector2 separationDirection = Position - enemy.Position;
+        if (separationDirection.sqrMagnitude < MinimumInputMagnitude)
+        {
+            separationDirection = GetFallbackSeparationDirection(fallbackDirection, enemy);
+        }
+
+        if (separationDirection.sqrMagnitude < MinimumInputMagnitude)
+        {
+            return false;
+        }
+
+        return TryMoveWithCollision(separationDirection.normalized, distance, blocker);
+    }
+
+    private Vector2 GetFallbackSeparationDirection(Vector2 fallbackDirection, EnemyAI2D enemy)
+    {
+        Vector2 referenceDirection = fallbackDirection.sqrMagnitude >= MinimumInputMagnitude
+            ? fallbackDirection.normalized
+            : Vector2.right;
+        Vector2 side = new(-referenceDirection.y, referenceDirection.x);
+
+        return _owner != null &&
+            enemy != null &&
+            _owner.GetInstanceID() > enemy.GetInstanceID()
+            ? side
+            : -side;
+    }
+
+    private bool TryMoveWithCollision(
+        Vector2 direction,
+        float distance,
+        Collider2D ignoredCollider = null)
+    {
+        float allowedDistance = GetCollisionLimitedDistance(direction, distance, ignoredCollider);
+        if (allowedDistance <= 0f)
+        {
+            return false;
+        }
+
+        Rigidbody.MovePosition(Rigidbody.position + direction * allowedDistance);
+        return true;
+    }
+
+    private float GetCollisionLimitedDistance(
+        Vector2 direction,
+        float distance,
+        Collider2D ignoredCollider = null)
     {
         int hitCount = Rigidbody.Cast(direction, _movementHits, distance + MovementSkinWidth);
         float allowedDistance = distance;
@@ -415,7 +490,7 @@ public class EnemyContext
         for (int i = 0; i < hitCount; i++)
         {
             RaycastHit2D hit = _movementHits[i];
-            if (!IsBlockingMovementHit(hit))
+            if (!IsBlockingMovementHit(hit, ignoredCollider))
             {
                 continue;
             }
@@ -427,9 +502,16 @@ public class EnemyContext
         return allowedDistance;
     }
 
-    private static bool IsBlockingMovementHit(RaycastHit2D hit)
+    private static bool IsOverlapBlockerDistance(float distance)
     {
-        return hit.collider != null && !hit.collider.isTrigger;
+        return distance <= MovementSkinWidth;
+    }
+
+    private static bool IsBlockingMovementHit(RaycastHit2D hit, Collider2D ignoredCollider = null)
+    {
+        return hit.collider != null &&
+            hit.collider != ignoredCollider &&
+            !hit.collider.isTrigger;
     }
 
     public void RotateWorld(float degreesPerSecond, float deltaTime)

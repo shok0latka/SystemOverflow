@@ -33,7 +33,7 @@ public class ScriptEditorUI : MonoBehaviour
     Label resultLabel;
     VisualElement editorRoot;
     VisualElement toolbar;
-    Button hackedRobotButton;
+    HackedRobotAccessButton hackedRobotAccessButton;
     Vector3 startMouse;
     float startLeft;
     float startTop;
@@ -69,7 +69,7 @@ public class ScriptEditorUI : MonoBehaviour
         BuildConsole(editor);
         BuildElements(elements, editor);
         BuildToolbar(root);
-        BuildHackedRobotButton(root);
+        hackedRobotAccessButton = new HackedRobotAccessButton(root, OpenForHackTarget);
         SetEditorVisible(openOnStart);
 
         // TestConsole();
@@ -82,7 +82,7 @@ public class ScriptEditorUI : MonoBehaviour
             CloseEditor(clearQueuedCommands: false, cancelHack: false);
         }
 
-        RefreshHackedRobotButton();
+        hackedRobotAccessButton?.Refresh(editorVisible);
     }
 
     void OnDestroy()
@@ -348,40 +348,6 @@ public class ScriptEditorUI : MonoBehaviour
         deleteButton.clicked += DeleteSelected;
     }
 
-    void BuildHackedRobotButton(VisualElement root)
-    {
-        hackedRobotButton = root.Q<Button>("HackedRobotAccess");
-        if (hackedRobotButton == null)
-        {
-            hackedRobotButton = new Button(OpenActiveHackEditor)
-            {
-                name = "HackedRobotAccess",
-                text = "Robot",
-                tooltip = "Open hacked robot command menu"
-            };
-
-            root.Add(hackedRobotButton);
-        }
-        else
-        {
-            hackedRobotButton.clicked += OpenActiveHackEditor;
-        }
-
-        hackedRobotButton.pickingMode = PickingMode.Position;
-        hackedRobotButton.style.position = Position.Absolute;
-        hackedRobotButton.style.top = 12;
-        hackedRobotButton.style.right = 12;
-        hackedRobotButton.style.width = 88;
-        hackedRobotButton.style.height = 36;
-        hackedRobotButton.style.fontSize = 16;
-        hackedRobotButton.style.unityFontStyleAndWeight = FontStyle.Bold;
-        hackedRobotButton.style.borderTopLeftRadius = 6;
-        hackedRobotButton.style.borderTopRightRadius = 6;
-        hackedRobotButton.style.borderBottomLeftRadius = 6;
-        hackedRobotButton.style.borderBottomRightRadius = 6;
-        RefreshHackedRobotButton();
-    }
-
     void BuildConsole(VisualElement editor)
     {
         editor.Add(UIConsole.Instance);
@@ -491,18 +457,6 @@ public class ScriptEditorUI : MonoBehaviour
         UIConsole.Instance.Write($"Command target: {boundTarget.name}", MessageType.Info);
     }
 
-    void OpenActiveHackEditor()
-    {
-        EnemyHackController target = EnemyHackController.ActiveHack;
-        if (!IsActiveHackTarget(target))
-        {
-            RefreshHackedRobotButton();
-            return;
-        }
-
-        OpenForHackTarget(target);
-    }
-
     void CancelEditor()
     {
         CloseEditor(clearQueuedCommands: true, cancelHack: true);
@@ -576,7 +530,7 @@ public class ScriptEditorUI : MonoBehaviour
 
         SetElementVisible(editorRoot, visible);
         SetElementVisible(toolbar, visible);
-        RefreshHackedRobotButton();
+        hackedRobotAccessButton?.Refresh(editorVisible);
     }
 
     void SetElementVisible(VisualElement element, bool visible)
@@ -590,19 +544,4 @@ public class ScriptEditorUI : MonoBehaviour
         element.pickingMode = visible ? PickingMode.Position : PickingMode.Ignore;
     }
 
-    void RefreshHackedRobotButton()
-    {
-        if (hackedRobotButton == null)
-        {
-            return;
-        }
-
-        bool showButton = !editorVisible && IsActiveHackTarget(EnemyHackController.ActiveHack);
-        hackedRobotButton.style.display = showButton ? DisplayStyle.Flex : DisplayStyle.None;
-    }
-
-    static bool IsActiveHackTarget(EnemyHackController target)
-    {
-        return target != null && target.GetHackStatus().IsActive;
-    }
 }
