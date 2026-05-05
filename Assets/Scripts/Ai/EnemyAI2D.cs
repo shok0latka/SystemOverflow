@@ -269,7 +269,7 @@ public class EnemyAI2D : MonoBehaviour
         _context.Suspicion.Set(Mathf.Max(_context.Suspicion.Value, alertSuspicion));
         _context.TimeSinceSeenPlayer = 0f;
         _context.ResetReturnTimer();
-        _stateMachine.TransitionTo(EnemyState.ReturnToPatrol);
+        _stateMachine.TransitionTo(EnemyState.Search);
         UpdateViewDirectionForCurrentState(_stateMachine.CurrentState);
         SyncDebugRuntime();
     }
@@ -369,7 +369,7 @@ public class EnemyAI2D : MonoBehaviour
         _stateMachine.Register(new ChaseState(_context, _stateMachine));
         _stateMachine.Register(new AttackState(_context, _stateMachine));
         _stateMachine.Register(new HackedState(_context, _stateMachine));
-        _stateMachine.Register(new ReturnToPatrolState(_context, _stateMachine));
+        _stateMachine.Register(new SearchState(_context, _stateMachine));
         _stateMachine.Initialize(EnemyState.Patrol);
         UpdateViewDirectionForCurrentState(_stateMachine.CurrentState);
     }
@@ -431,7 +431,7 @@ public class EnemyAI2D : MonoBehaviour
             }
         }
         else if (toState == EnemyState.Patrol ||
-            toState == EnemyState.ReturnToPatrol ||
+            toState == EnemyState.Search ||
             toState == EnemyState.Hacked)
         {
             _hasSentAlertForCurrentChase = false;
@@ -742,7 +742,7 @@ public class EnemyAI2D : MonoBehaviour
                     _context.UpdateViewDirectionTowards(_context.Player.position);
                 }
                 break;
-            case EnemyState.ReturnToPatrol:
+            case EnemyState.Search:
                 _context.UpdateViewDirectionTowards(_context.LastKnownPlayerPosition);
                 break;
         }
@@ -785,6 +785,11 @@ public class EnemyAI2D : MonoBehaviour
 
     private static EnemyState ParseState(string rawState)
     {
+        if (string.Equals(rawState, "ReturnToPatrol", StringComparison.OrdinalIgnoreCase))
+        {
+            return EnemyState.Search;
+        }
+
         if (!string.IsNullOrEmpty(rawState) &&
             Enum.TryParse(rawState, true, out EnemyState parsedState))
         {

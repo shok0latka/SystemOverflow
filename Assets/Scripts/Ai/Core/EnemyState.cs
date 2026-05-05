@@ -4,5 +4,5 @@ public enum EnemyState
     Chase,
     Attack,
     Hacked,
-    ReturnToPatrol
+    Search
 }

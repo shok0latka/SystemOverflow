@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class EnemyContext
@@ -10,6 +11,7 @@ public class EnemyContext
     private readonly EnemyAI2D _owner;
     private readonly RaycastHit2D[] _movementHits = new RaycastHit2D[MovementCastCapacity];
     private readonly RaycastHit2D[] _lineOfSightHits = new RaycastHit2D[LineOfSightCastCapacity];
+    private readonly EnemyPathNavigator _pathNavigator;
 
     public EnemyContext(
         EnemyAI2D owner,
@@ -26,6 +28,7 @@ public class EnemyContext
         PatrolPoints = patrolPoints;
         Player = player;
         ObstacleMask = obstacleMask;
+        _pathNavigator = new EnemyPathNavigator(owner, rigidbody);
         Suspicion = new SuspicionMeter(
             config.suspicionGainPerSecond,
             config.suspicionDecayPerSecond
@@ -59,17 +62,20 @@ public class EnemyContext
     {
         Config = config;
         Suspicion.Configure(config.suspicionGainPerSecond, config.suspicionDecayPerSecond);
+        ClearPath();
     }
 
     public void SetPatrolPoints(Transform[] patrolPoints)
     {
         PatrolPoints = patrolPoints;
+        ClearPath();
     }
 
     public void SetPlayer(Transform player)
     {
         Player = player;
         PlayerHealth = player == null ? null : player.GetComponent<PlayerHealth>();
+        ClearPath();
     }
 
     public void SetHackController(EnemyHackController hackController)
@@ -167,6 +173,11 @@ public class EnemyContext
         ReturnTimer = 0f;
     }
 
+    public void ClearPath()
+    {
+        _pathNavigator.Clear();
+    }
+
     public void MoveTowards(Vector2 target, float speed, float fixedDeltaTime)
     {
         if (Rigidbody == null || speed <= 0f)
@@ -181,6 +192,33 @@ public class EnemyContext
         }
 
         MoveWithCollision(direction, speed * fixedDeltaTime);
+    }
+
+    public bool MoveAlongPathTo(Vector2 target, float speed, float fixedDeltaTime)
+    {
+        if (Rigidbody == null || speed <= 0f)
+        {
+            return false;
+        }
+
+        if (!_pathNavigator.TryGetMoveDirection(
+                Rigidbody.position,
+                target,
+                Config,
+                Player,
+                fixedDeltaTime,
+                out Vector2 direction))
+        {
+            return false;
+        }
+
+        bool moved = MoveWithCollisionAvoidance(direction, speed * fixedDeltaTime);
+        if (!moved)
+        {
+            _pathNavigator.RequestRefresh();
+        }
+
+        return moved;
     }
 
     public void MoveAlongPatrol(float speed, float fixedDeltaTime)
@@ -202,11 +240,12 @@ public class EnemyContext
         }
 
         Vector2 target = patrolPoint.position;
-        MoveTowards(target, speed, fixedDeltaTime);
+        MoveAlongPathTo(target, speed, fixedDeltaTime);
 
         if (Vector2.Distance(Rigidbody.position, target) < 0.2f)
         {
             PatrolIndex = (PatrolIndex + 1) % PatrolPoints.Length;
+            ClearPath();
         }
     }
 
@@ -226,35 +265,6 @@ public class EnemyContext
         }
 
         return null;
-    }
-
-    public void MoveWithRelativeInput(float moveRight, float moveForward, float speed, float fixedDeltaTime)
-    {
-        if (Rigidbody == null || speed <= 0f)
-        {
-            return;
-        }
-
-        Vector2 input = new Vector2(
-            Mathf.Clamp(moveRight, -1f, 1f),
-            Mathf.Clamp(moveForward, -1f, 1f));
-        if (input.sqrMagnitude < MinimumInputMagnitude)
-        {
-            return;
-        }
-
-        input = Vector2.ClampMagnitude(input, 1f);
-        Vector2 forward = ViewDirection.sqrMagnitude < MinimumInputMagnitude
-            ? Vector2.right
-            : ViewDirection.normalized;
-        Vector2 right = new Vector2(forward.y, -forward.x);
-        Vector2 moveDirection = right * input.x + forward * input.y;
-        if (moveDirection.sqrMagnitude < MinimumInputMagnitude)
-        {
-            return;
-        }
-
-        MoveWithCollision(moveDirection, speed * fixedDeltaTime);
     }
 
     public bool MoveInDirection(Vector2 direction, float distanceStep)
@@ -290,6 +300,76 @@ public class EnemyContext
         return true;
     }
 
+    private bool MoveWithCollisionAvoidance(Vector2 direction, float distance)
+    {
+        if (Rigidbody == null || distance <= 0f || direction.sqrMagnitude < MinimumInputMagnitude)
+        {
+            return false;
+        }
+
+        Vector2 moveDirection = direction.normalized;
+        bool blockedByEnemy =
+            TryGetMovementBlocker(moveDirection, distance, out Collider2D blocker) &&
+            IsEnemyCollider(blocker);
+
+        if (blockedByEnemy && TryStepAroundEnemy(moveDirection, distance))
+        {
+            return true;
+        }
+
+        return MoveWithCollision(moveDirection, distance);
+    }
+
+    private bool TryStepAroundEnemy(Vector2 moveDirection, float distance)
+    {
+        Vector2 side = new(-moveDirection.y, moveDirection.x);
+        if (_owner != null && (_owner.GetInstanceID() & 1) == 0)
+        {
+            side = -side;
+        }
+
+        Vector2 forwardSide = (moveDirection + side).normalized;
+        Vector2 oppositeForwardSide = (moveDirection - side).normalized;
+
+        return MoveWithCollision(forwardSide, distance)
+            || MoveWithCollision(side, distance)
+            || MoveWithCollision(oppositeForwardSide, distance)
+            || MoveWithCollision(-side, distance);
+    }
+
+    private bool TryGetMovementBlocker(Vector2 direction, float distance, out Collider2D blocker)
+    {
+        blocker = null;
+
+        if (Rigidbody == null || direction.sqrMagnitude < MinimumInputMagnitude)
+        {
+            return false;
+        }
+
+        int hitCount = Rigidbody.Cast(direction, _movementHits, distance + MovementSkinWidth);
+        float nearestDistance = float.MaxValue;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit2D hit = _movementHits[i];
+            if (!IsBlockingMovementHit(hit) || hit.distance >= nearestDistance)
+            {
+                continue;
+            }
+
+            nearestDistance = hit.distance;
+            blocker = hit.collider;
+        }
+
+        return blocker != null;
+    }
+
+    private bool IsEnemyCollider(Collider2D collider)
+    {
+        EnemyAI2D enemy = collider != null ? collider.GetComponentInParent<EnemyAI2D>() : null;
+        return enemy != null && enemy != _owner;
+    }
+
     private float GetCollisionLimitedDistance(Vector2 direction, float distance)
     {
         int hitCount = Rigidbody.Cast(direction, _movementHits, distance + MovementSkinWidth);
@@ -315,25 +395,16 @@ public class EnemyContext
         return hit.collider != null && !hit.collider.isTrigger;
     }
 
-    public void RotateViewDirection(float turnInput, float degreesPerSecond, float deltaTime)
+    public void RotateWorld(float degreesPerSecond, float deltaTime)
     {
-        float clampedTurnInput = Mathf.Clamp(turnInput, -1f, 1f);
-        if (Mathf.Abs(clampedTurnInput) < 0.001f || degreesPerSecond <= 0f || deltaTime <= 0f)
+        if (Rigidbody == null ||
+            Mathf.Abs(degreesPerSecond) < 0.001f ||
+            deltaTime <= 0f)
         {
             return;
         }
 
-        Vector2 currentDirection = ViewDirection.sqrMagnitude < MinimumInputMagnitude
-            ? Vector2.right
-            : ViewDirection.normalized;
-        float angleDegrees = -clampedTurnInput * degreesPerSecond * deltaTime;
-        float radians = angleDegrees * Mathf.Deg2Rad;
-        float cos = Mathf.Cos(radians);
-        float sin = Mathf.Sin(radians);
-        Vector2 rotatedDirection = new Vector2(
-            currentDirection.x * cos - currentDirection.y * sin,
-            currentDirection.x * sin + currentDirection.y * cos);
-        UpdateViewDirection(rotatedDirection);
+        Rigidbody.MoveRotation(Rigidbody.rotation + degreesPerSecond * deltaTime);
     }
 
     public bool TryInteractWithNearestInteractable()
@@ -433,6 +504,7 @@ public class EnemyContext
         set
         {
             _owner.transform.position = value;
+            ClearPath();
 
             if (Rigidbody != null)
             {
@@ -532,5 +604,385 @@ public class EnemyContext
         }
 
         return true;
+    }
+}
+
+internal sealed class EnemyPathNavigator
+{
+    private const int ObstacleProbeCapacity = 32;
+    private const float MinimumTargetMoveThreshold = 0.05f;
+    private const float MinimumWaypointArrivalDistance = 0.05f;
+
+    private static readonly Vector2Int[] Neighbors =
+    {
+        Vector2Int.up,
+        Vector2Int.down,
+        Vector2Int.left,
+        Vector2Int.right
+    };
+
+    private readonly EnemyAI2D _owner;
+    private readonly Rigidbody2D _rigidbody;
+    private readonly Collider2D[] _obstacleProbeHits = new Collider2D[ObstacleProbeCapacity];
+    private readonly List<Vector2> _path = new();
+    private readonly List<Vector2Int> _open = new();
+    private readonly HashSet<Vector2Int> _closed = new();
+    private readonly Dictionary<Vector2Int, Vector2Int> _cameFrom = new();
+    private readonly Dictionary<Vector2Int, int> _costByCell = new();
+
+    private Vector2 _target;
+    private int _pathIndex;
+    private float _refreshTimer;
+
+    public EnemyPathNavigator(EnemyAI2D owner, Rigidbody2D rigidbody)
+    {
+        _owner = owner;
+        _rigidbody = rigidbody;
+    }
+
+    public void Clear()
+    {
+        _path.Clear();
+        _pathIndex = 0;
+        _refreshTimer = 0f;
+        _target = default;
+    }
+
+    public void RequestRefresh()
+    {
+        _refreshTimer = 0f;
+    }
+
+    public bool TryGetMoveDirection(
+        Vector2 start,
+        Vector2 target,
+        EnemyConfig config,
+        Transform player,
+        float deltaTime,
+        out Vector2 direction)
+    {
+        direction = Vector2.zero;
+
+        if (config == null)
+        {
+            return false;
+        }
+
+        _refreshTimer -= Mathf.Max(0f, deltaTime);
+        if (ShouldRebuildPath(target, config))
+        {
+            RebuildPath(start, target, config, player);
+        }
+
+        if (_path.Count == 0)
+        {
+            return false;
+        }
+
+        AdvancePastReachedWaypoints(start, config.pathCellSize);
+        Vector2 waypoint = GetCurrentWaypoint(target);
+        Vector2 toWaypoint = waypoint - start;
+        if (toWaypoint.sqrMagnitude < MinimumTargetMoveThreshold * MinimumTargetMoveThreshold)
+        {
+            return false;
+        }
+
+        direction = toWaypoint.normalized;
+        return true;
+    }
+
+    private bool ShouldRebuildPath(Vector2 target, EnemyConfig config)
+    {
+        if (_path.Count == 0 || _pathIndex >= _path.Count)
+        {
+            return true;
+        }
+
+        if (_refreshTimer <= 0f)
+        {
+            return true;
+        }
+
+        float targetMoveThreshold = Mathf.Max(MinimumTargetMoveThreshold, config.pathCellSize * 0.5f);
+        return (_target - target).sqrMagnitude >= targetMoveThreshold * targetMoveThreshold;
+    }
+
+    private void RebuildPath(
+        Vector2 start,
+        Vector2 target,
+        EnemyConfig config,
+        Transform player)
+    {
+        _path.Clear();
+        _pathIndex = 0;
+        _target = target;
+        _refreshTimer = config.pathRefreshInterval;
+
+        float cellSize = config.pathCellSize;
+        Vector2Int startCell = WorldToCell(start, cellSize);
+        Vector2Int goalCell = ResolveGoalCell(
+            startCell,
+            WorldToCell(target, cellSize),
+            cellSize,
+            player);
+
+        if (startCell == goalCell)
+        {
+            _path.Add(target);
+            return;
+        }
+
+        if (!TryFindPath(startCell, goalCell, config, player))
+        {
+            return;
+        }
+
+        _path[_path.Count - 1] = target;
+    }
+
+    private bool TryFindPath(
+        Vector2Int startCell,
+        Vector2Int goalCell,
+        EnemyConfig config,
+        Transform player)
+    {
+        _open.Clear();
+        _closed.Clear();
+        _cameFrom.Clear();
+        _costByCell.Clear();
+
+        _open.Add(startCell);
+        _costByCell[startCell] = 0;
+
+        int searchedNodes = 0;
+        while (_open.Count > 0 && searchedNodes < config.pathMaxSearchNodes)
+        {
+            searchedNodes++;
+            Vector2Int current = RemoveBestOpenCell(goalCell);
+            if (current == goalCell)
+            {
+                BuildPath(startCell, goalCell, config.pathCellSize);
+                return _path.Count > 0;
+            }
+
+            _closed.Add(current);
+
+            foreach (Vector2Int offset in Neighbors)
+            {
+                Vector2Int neighbor = current + offset;
+                if (_closed.Contains(neighbor) ||
+                    IsCellBlocked(neighbor, config.pathCellSize, player))
+                {
+                    continue;
+                }
+
+                int newCost = _costByCell[current] + 1;
+                if (_costByCell.TryGetValue(neighbor, out int oldCost) && oldCost <= newCost)
+                {
+                    continue;
+                }
+
+                _costByCell[neighbor] = newCost;
+                _cameFrom[neighbor] = current;
+                if (!_open.Contains(neighbor))
+                {
+                    _open.Add(neighbor);
+                }
+            }
+        }
+
+        _path.Clear();
+        return false;
+    }
+
+    private Vector2Int RemoveBestOpenCell(Vector2Int goalCell)
+    {
+        int bestIndex = 0;
+        int bestScore = GetEstimatedCost(_open[0], goalCell);
+
+        for (int i = 1; i < _open.Count; i++)
+        {
+            int score = GetEstimatedCost(_open[i], goalCell);
+            if (score >= bestScore)
+            {
+                continue;
+            }
+
+            bestIndex = i;
+            bestScore = score;
+        }
+
+        Vector2Int bestCell = _open[bestIndex];
+        _open.RemoveAt(bestIndex);
+        return bestCell;
+    }
+
+    private int GetEstimatedCost(Vector2Int cell, Vector2Int goalCell)
+    {
+        return _costByCell[cell] + GetManhattanDistance(cell, goalCell);
+    }
+
+    private void BuildPath(Vector2Int startCell, Vector2Int goalCell, float cellSize)
+    {
+        _path.Clear();
+
+        Vector2Int current = goalCell;
+        while (current != startCell)
+        {
+            _path.Add(CellToWorld(current, cellSize));
+            if (!_cameFrom.TryGetValue(current, out Vector2Int previous))
+            {
+                _path.Clear();
+                return;
+            }
+
+            current = previous;
+        }
+
+        _path.Reverse();
+    }
+
+    private Vector2Int ResolveGoalCell(
+        Vector2Int startCell,
+        Vector2Int goalCell,
+        float cellSize,
+        Transform player)
+    {
+        if (startCell == goalCell || !IsCellBlocked(goalCell, cellSize, player))
+        {
+            return goalCell;
+        }
+
+        const int maxGoalSearchRadius = 4;
+        Vector2Int bestCell = goalCell;
+        int bestDistance = int.MaxValue;
+
+        for (int radius = 1; radius <= maxGoalSearchRadius; radius++)
+        {
+            for (int x = -radius; x <= radius; x++)
+            {
+                for (int y = -radius; y <= radius; y++)
+                {
+                    Vector2Int candidate = goalCell + new Vector2Int(x, y);
+                    if (GetManhattanDistance(candidate, goalCell) > radius ||
+                        IsCellBlocked(candidate, cellSize, player))
+                    {
+                        continue;
+                    }
+
+                    int distanceToStart = GetManhattanDistance(candidate, startCell);
+                    if (distanceToStart >= bestDistance)
+                    {
+                        continue;
+                    }
+
+                    bestCell = candidate;
+                    bestDistance = distanceToStart;
+                }
+            }
+
+            if (bestDistance < int.MaxValue)
+            {
+                return bestCell;
+            }
+        }
+
+        return bestCell;
+    }
+
+    private bool IsCellBlocked(
+        Vector2Int cell,
+        float cellSize,
+        Transform player)
+    {
+        int hitCount = Physics2D.OverlapCircleNonAlloc(
+            CellToWorld(cell, cellSize),
+            GetProbeRadius(cellSize),
+            _obstacleProbeHits);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            if (IsNavigationObstacle(_obstacleProbeHits[i], player))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsNavigationObstacle(Collider2D collider, Transform player)
+    {
+        if (collider == null || collider.isTrigger)
+        {
+            return false;
+        }
+
+        if (_rigidbody != null && collider.attachedRigidbody == _rigidbody)
+        {
+            return false;
+        }
+
+        Transform hitTransform = collider.transform;
+        if (_owner != null && hitTransform.IsChildOf(_owner.transform))
+        {
+            return false;
+        }
+
+        if (player != null && (hitTransform == player || hitTransform.IsChildOf(player)))
+        {
+            return false;
+        }
+
+        return collider.GetComponentInParent<EnemyAI2D>() == null;
+    }
+
+    private void AdvancePastReachedWaypoints(Vector2 start, float cellSize)
+    {
+        float arrivalDistance = Mathf.Max(MinimumWaypointArrivalDistance, cellSize * 0.25f);
+        float arrivalSqrDistance = arrivalDistance * arrivalDistance;
+
+        while (_pathIndex < _path.Count &&
+            (_path[_pathIndex] - start).sqrMagnitude <= arrivalSqrDistance)
+        {
+            _pathIndex++;
+        }
+    }
+
+    private Vector2 GetCurrentWaypoint(Vector2 target)
+    {
+        return _pathIndex < _path.Count
+            ? _path[_pathIndex]
+            : target;
+    }
+
+    private static Vector2Int WorldToCell(Vector2 position, float cellSize)
+    {
+        return new Vector2Int(
+            Mathf.RoundToInt(position.x / cellSize),
+            Mathf.RoundToInt(position.y / cellSize));
+    }
+
+    private static Vector2 CellToWorld(Vector2Int cell, float cellSize)
+    {
+        return new Vector2(cell.x * cellSize, cell.y * cellSize);
+    }
+
+    private float GetProbeRadius(float cellSize)
+    {
+        float radius = Mathf.Max(0.05f, cellSize * 0.45f);
+        Collider2D bodyCollider = _rigidbody != null ? _rigidbody.GetComponent<Collider2D>() : null;
+        if (bodyCollider == null)
+        {
+            return radius;
+        }
+
+        Vector3 extents = bodyCollider.bounds.extents;
+        return Mathf.Max(radius, Mathf.Max(extents.x, extents.y));
+    }
+
+    private static int GetManhattanDistance(Vector2Int from, Vector2Int to)
+    {
+        return Mathf.Abs(from.x - to.x) + Mathf.Abs(from.y - to.y);
     }
 }

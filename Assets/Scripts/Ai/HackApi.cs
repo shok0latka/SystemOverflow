@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public interface IHackable
@@ -19,21 +20,26 @@ public enum HackPhase
 public enum HackCommand
 {
     None,
-    MoveForward,
+    MoveUp,
+    MoveDown,
     MoveLeft,
     MoveRight,
-    RotateLeft,
-    RotateRight,
+    RotateCounterClockwise,
+    RotateClockwise,
     Interact,
-    MoveGlobalUp,
-    MoveGlobalDown,
-    MoveGlobalLeft,
-    MoveGlobalRight
 }
 
 public readonly struct HackQueuedCommand
 {
     public const float DefaultMovementDistance = 1f;
+
+    private static readonly Dictionary<HackCommand, Vector2> MovementDirections = new()
+    {
+        [HackCommand.MoveUp] = Vector2.up,
+        [HackCommand.MoveDown] = Vector2.down,
+        [HackCommand.MoveLeft] = Vector2.left,
+        [HackCommand.MoveRight] = Vector2.right
+    };
 
     public HackQueuedCommand(HackCommand command, float distance = DefaultMovementDistance)
     {
@@ -50,17 +56,12 @@ public readonly struct HackQueuedCommand
 
     public static bool IsMovementCommand(HackCommand command)
     {
-        return command switch
-        {
-            HackCommand.MoveForward => true,
-            HackCommand.MoveLeft => true,
-            HackCommand.MoveRight => true,
-            HackCommand.MoveGlobalUp => true,
-            HackCommand.MoveGlobalDown => true,
-            HackCommand.MoveGlobalLeft => true,
-            HackCommand.MoveGlobalRight => true,
-            _ => false
-        };
+        return TryGetMovementDirection(command, out _);
+    }
+
+    public static bool TryGetMovementDirection(HackCommand command, out Vector2 direction)
+    {
+        return MovementDirections.TryGetValue(command, out direction);
     }
 
     public static bool IsValidMovementDistance(float distance)

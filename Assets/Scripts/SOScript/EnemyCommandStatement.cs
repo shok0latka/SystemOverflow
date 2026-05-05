@@ -93,15 +93,12 @@ public sealed class EnemyCommandStatement : IStatement
     {
         return command switch
         {
-            HackCommand.MoveForward => "Move Forward",
+            HackCommand.MoveUp => "Move Up",
+            HackCommand.MoveDown => "Move Down",
             HackCommand.MoveLeft => "Move Left",
             HackCommand.MoveRight => "Move Right",
-            HackCommand.MoveGlobalUp => "Move Global Up",
-            HackCommand.MoveGlobalDown => "Move Global Down",
-            HackCommand.MoveGlobalLeft => "Move Global Left",
-            HackCommand.MoveGlobalRight => "Move Global Right",
-            HackCommand.RotateLeft => "Rotate Left",
-            HackCommand.RotateRight => "Rotate Right",
+            HackCommand.RotateCounterClockwise => "Rotate Counterclockwise",
+            HackCommand.RotateClockwise => "Rotate Clockwise",
             HackCommand.Interact => "Interact",
             _ => "Enemy Command"
         };

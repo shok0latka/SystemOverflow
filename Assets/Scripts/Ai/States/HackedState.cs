@@ -3,7 +3,6 @@ using UnityEngine;
 public class HackedState : EnemyStateBase
 {
     private const float HackTurnDegreesPerSecond = 180f;
-    private const float MinimumDirectionMagnitude = 0.0001f;
 
     private HackCommand _activeCommand = HackCommand.None;
     private float _activeCommandTimeRemaining;
@@ -24,6 +23,7 @@ public class HackedState : EnemyStateBase
         Context.ResetReturnTimer();
         Context.AttackCooldownTimer = 0f;
         Context.TimeSinceSeenPlayer = 0f;
+        Context.ClearPath();
         Context.StopMovement();
     }
 
@@ -31,6 +31,7 @@ public class HackedState : EnemyStateBase
     {
         ResetActiveCommand();
         Context.HackController?.ClearCommands();
+        Context.ClearPath();
         Context.StopMovement();
     }
 
@@ -62,23 +63,20 @@ public class HackedState : EnemyStateBase
             return;
         }
 
+        if (HackQueuedCommand.IsMovementCommand(_activeCommand))
+        {
+            TickMovementCommand(fixedDeltaTime);
+            return;
+        }
+
         switch (_activeCommand)
         {
-            case HackCommand.MoveForward:
-            case HackCommand.MoveLeft:
-            case HackCommand.MoveRight:
-            case HackCommand.MoveGlobalUp:
-            case HackCommand.MoveGlobalDown:
-            case HackCommand.MoveGlobalLeft:
-            case HackCommand.MoveGlobalRight:
-                TickMovementCommand(fixedDeltaTime);
-                return;
-            case HackCommand.RotateLeft:
-                Context.RotateViewDirection(-1f, HackTurnDegreesPerSecond, fixedDeltaTime);
+            case HackCommand.RotateCounterClockwise:
+                Context.RotateWorld(HackTurnDegreesPerSecond, fixedDeltaTime);
                 Context.StopMovement();
                 break;
-            case HackCommand.RotateRight:
-                Context.RotateViewDirection(1f, HackTurnDegreesPerSecond, fixedDeltaTime);
+            case HackCommand.RotateClockwise:
+                Context.RotateWorld(-HackTurnDegreesPerSecond, fixedDeltaTime);
                 Context.StopMovement();
                 break;
             case HackCommand.Interact:
@@ -126,7 +124,7 @@ public class HackedState : EnemyStateBase
 
     private void TickMovementCommand(float fixedDeltaTime)
     {
-        if (!TryGetMovementDirection(_activeCommand, out Vector2 direction) ||
+        if (!HackQueuedCommand.TryGetMovementDirection(_activeCommand, out Vector2 direction) ||
             _activeMovementDistanceRemaining <= 0f)
         {
             Context.StopMovement();
@@ -155,42 +153,6 @@ public class HackedState : EnemyStateBase
         if (_activeMovementDistanceRemaining <= 0f)
         {
             ResetActiveCommand();
-        }
-    }
-
-    private bool TryGetMovementDirection(HackCommand command, out Vector2 direction)
-    {
-        Vector2 forward = Context.ViewDirection.sqrMagnitude < MinimumDirectionMagnitude
-            ? Vector2.right
-            : Context.ViewDirection.normalized;
-        Vector2 right = new Vector2(forward.y, -forward.x);
-
-        switch (command)
-        {
-            case HackCommand.MoveForward:
-                direction = forward;
-                return true;
-            case HackCommand.MoveLeft:
-                direction = -right;
-                return true;
-            case HackCommand.MoveRight:
-                direction = right;
-                return true;
-            case HackCommand.MoveGlobalUp:
-                direction = Vector2.up;
-                return true;
-            case HackCommand.MoveGlobalDown:
-                direction = Vector2.down;
-                return true;
-            case HackCommand.MoveGlobalLeft:
-                direction = Vector2.left;
-                return true;
-            case HackCommand.MoveGlobalRight:
-                direction = Vector2.right;
-                return true;
-            default:
-                direction = Vector2.zero;
-                return false;
         }
     }
 

@@ -1,23 +1,27 @@
-public class ReturnToPatrolState : EnemyStateBase
+public class SearchState : EnemyStateBase
 {
     private const float LastKnownArrivalDistance = 0.2f;
 
     private bool _isWaitingAtLastKnownPosition;
 
-    public ReturnToPatrolState(EnemyContext context, EnemyStateMachine stateMachine)
+    public SearchState(EnemyContext context, EnemyStateMachine stateMachine)
         : base(context, stateMachine)
     {
     }
 
-    public override EnemyState StateType => EnemyState.ReturnToPatrol;
+    public override EnemyState StateType => EnemyState.Search;
 
     public override void Enter()
     {
         _isWaitingAtLastKnownPosition = false;
         Context.ResetReturnTimer();
+        Context.ClearPath();
     }
 
-    public override void Exit() { }
+    public override void Exit()
+    {
+        Context.ClearPath();
+    }
 
     public override void TickUpdate(float deltaTime)
     {
@@ -63,6 +67,6 @@ public class ReturnToPatrolState : EnemyStateBase
             return;
         }
 
-        Context.MoveTowards(Context.LastKnownPlayerPosition, Config.patrolSpeed, fixedDeltaTime);
+        Context.MoveAlongPathTo(Context.LastKnownPlayerPosition, Config.patrolSpeed, fixedDeltaTime);
     }
 }

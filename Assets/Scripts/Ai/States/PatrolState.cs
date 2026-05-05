@@ -10,9 +10,13 @@ public class PatrolState : EnemyStateBase
     public override void Enter()
     {
         Context.ResetReturnTimer();
+        Context.ClearPath();
     }
 
-    public override void Exit() { }
+    public override void Exit()
+    {
+        Context.ClearPath();
+    }
 
     public override void TickUpdate(float deltaTime)
     {

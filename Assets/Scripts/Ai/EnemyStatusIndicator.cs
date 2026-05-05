@@ -47,8 +47,8 @@ public class EnemyStatusIndicator : MonoBehaviour
                 statusText.text = "H";
                 statusText.color = new Color(0.8f, 0.55f, 1f);
                 break;
-            case EnemyState.ReturnToPatrol:
-                statusText.text = "R";
+            case EnemyState.Search:
+                statusText.text = "S";
                 statusText.color = new Color(0.45f, 0.95f, 1f);
                 break;
         }

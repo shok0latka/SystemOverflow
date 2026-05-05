@@ -347,7 +347,7 @@ public class EnemyHackController : MonoBehaviour, IHackable
         {
             EnemyState.Patrol => true,
             EnemyState.Chase => true,
-            EnemyState.ReturnToPatrol => true,
+            EnemyState.Search => true,
             _ => false
         };
     }

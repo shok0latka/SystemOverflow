@@ -16,7 +16,7 @@ public class AttackState : EnemyStateBase
         {
             if (Context.TimeSinceSeenPlayer >= Config.loseSightTime)
             {
-                StateMachine.TransitionTo(EnemyState.ReturnToPatrol);
+                StateMachine.TransitionTo(EnemyState.Search);
             }
             else
             {

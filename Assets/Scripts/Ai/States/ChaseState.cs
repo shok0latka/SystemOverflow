@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public class ChaseState : EnemyStateBase
 {
     public ChaseState(EnemyContext context, EnemyStateMachine stateMachine)
@@ -10,11 +12,12 @@ public class ChaseState : EnemyStateBase
     public override void Enter()
     {
         Context.ResetReturnTimer();
+        Context.ClearPath();
     }
 
     public override void Exit()
     {
-        
+        Context.ClearPath();
     }
 
     public override void TickUpdate(float deltaTime)
@@ -27,12 +30,16 @@ public class ChaseState : EnemyStateBase
 
         if (Context.TimeSinceSeenPlayer >= Config.loseSightTime)
         {
-            StateMachine.TransitionTo(EnemyState.ReturnToPatrol);
+            StateMachine.TransitionTo(EnemyState.Search);
         }
     }
 
     public override void TickFixed(float fixedDeltaTime)
     {
-        Context.MoveTowards(Context.LastKnownPlayerPosition, Config.chaseSpeed, fixedDeltaTime);
+        Vector2 target = Context.Player != null
+            ? (Vector2)Context.Player.position
+            : Context.LastKnownPlayerPosition;
+
+        Context.MoveAlongPathTo(target, Config.chaseSpeed, fixedDeltaTime);
     }
 }

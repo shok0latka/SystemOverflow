@@ -21,7 +21,7 @@ MonoBehaviour:
   suspicionDecayPerSecond: 0.55
   suspicionThreshold: 0.55
   aggressiveness: 0.5
-  searchDuration: 10
+  searchDuration: 3
   attackRadius: 1.1
   attackCooldown: 1.1
   attackDamage: 1
@@ -30,3 +30,6 @@ MonoBehaviour:
   alertRadius: 5
   alertSignalSpeed: 2
   alertSuspicion: 0.45
+  pathCellSize: 0.5
+  pathRefreshInterval: 0.2
+  pathMaxSearchNodes: 1024

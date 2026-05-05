@@ -14,15 +14,12 @@ public class ScriptEditorUI : MonoBehaviour
 {
     static readonly HackCommand[] EnemyCommandPaletteOrder =
     {
-        HackCommand.MoveForward,
+        HackCommand.MoveUp,
+        HackCommand.MoveDown,
         HackCommand.MoveLeft,
         HackCommand.MoveRight,
-        HackCommand.MoveGlobalUp,
-        HackCommand.MoveGlobalDown,
-        HackCommand.MoveGlobalLeft,
-        HackCommand.MoveGlobalRight,
-        HackCommand.RotateLeft,
-        HackCommand.RotateRight,
+        HackCommand.RotateCounterClockwise,
+        HackCommand.RotateClockwise,
         HackCommand.Interact
     };
 
