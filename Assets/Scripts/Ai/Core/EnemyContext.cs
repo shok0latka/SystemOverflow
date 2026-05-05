@@ -205,6 +205,37 @@ public class EnemyContext
         UpdateViewDirection(target - Position);
     }
 
+    public void UpdateViewDirectionTowardsSmoothly(
+        Vector2 target,
+        float degreesPerSecond,
+        float deltaTime)
+    {
+        Vector2 direction = target - Position;
+        if (direction.sqrMagnitude < 0.0001f)
+        {
+            return;
+        }
+
+        if (degreesPerSecond <= 0f || deltaTime <= 0f)
+        {
+            UpdateViewDirection(direction);
+            return;
+        }
+
+        Vector2 currentDirection = ViewDirection.sqrMagnitude < 0.0001f
+            ? Vector2.right
+            : ViewDirection.normalized;
+        Vector2 targetDirection = direction.normalized;
+        float currentAngle = Mathf.Atan2(currentDirection.y, currentDirection.x) * Mathf.Rad2Deg;
+        float targetAngle = Mathf.Atan2(targetDirection.y, targetDirection.x) * Mathf.Rad2Deg;
+        float nextAngle = Mathf.MoveTowardsAngle(
+            currentAngle,
+            targetAngle,
+            degreesPerSecond * deltaTime);
+        float radians = nextAngle * Mathf.Deg2Rad;
+        ViewDirection = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)).normalized;
+    }
+
     public void ResetReturnTimer()
     {
         ReturnTimer = 0f;
@@ -364,7 +395,7 @@ public class EnemyContext
             return true;
         }
 
-        if (blockedByEnemy && TryStepAroundEnemy(moveDirection, distance))
+        if (blockedByEnemy && TryStepAroundEnemy(moveDirection, distance, blocker))
         {
             return true;
         }
@@ -372,21 +403,34 @@ public class EnemyContext
         return MoveWithCollision(moveDirection, distance);
     }
 
-    private bool TryStepAroundEnemy(Vector2 moveDirection, float distance)
+    private bool TryStepAroundEnemy(Vector2 moveDirection, float distance, Collider2D blocker)
     {
-        Vector2 side = new(-moveDirection.y, moveDirection.x);
-        if (_owner != null && (_owner.GetInstanceID() & 1) == 0)
-        {
-            side = -side;
-        }
+        EnemyAI2D enemy = blocker != null ? blocker.GetComponentInParent<EnemyAI2D>() : null;
+        Vector2 side = GetPassingSide(moveDirection, enemy);
 
         Vector2 forwardSide = (moveDirection + side).normalized;
+        Vector2 backSide = (-moveDirection + side).normalized;
         Vector2 oppositeForwardSide = (moveDirection - side).normalized;
 
         return MoveWithCollision(forwardSide, distance)
             || MoveWithCollision(side, distance)
+            || MoveWithCollision(backSide, distance)
             || MoveWithCollision(oppositeForwardSide, distance)
-            || MoveWithCollision(-side, distance);
+            || MoveWithCollision(-side, distance)
+            || MoveWithCollision(-moveDirection, distance * 0.5f);
+    }
+
+    private Vector2 GetPassingSide(Vector2 moveDirection, EnemyAI2D enemy)
+    {
+        Vector2 side = new(-moveDirection.y, moveDirection.x);
+        if (_owner == null || enemy == null)
+        {
+            return side;
+        }
+
+        return _owner.GetInstanceID() > enemy.GetInstanceID()
+            ? -side
+            : side;
     }
 
     private bool TryGetMovementBlocker(
@@ -825,13 +869,19 @@ internal sealed class EnemyPathNavigator
     private const int ObstacleProbeCapacity = 32;
     private const float MinimumTargetMoveThreshold = 0.05f;
     private const float MinimumWaypointArrivalDistance = 0.05f;
+    private const int CardinalMoveCost = 10;
+    private const int DiagonalMoveCost = 14;
 
-    private static readonly Vector2Int[] Neighbors =
+    private static readonly PathStep[] Neighbors =
     {
-        Vector2Int.up,
-        Vector2Int.down,
-        Vector2Int.left,
-        Vector2Int.right
+        new(Vector2Int.up, CardinalMoveCost),
+        new(Vector2Int.down, CardinalMoveCost),
+        new(Vector2Int.left, CardinalMoveCost),
+        new(Vector2Int.right, CardinalMoveCost),
+        new(new Vector2Int(1, 1), DiagonalMoveCost),
+        new(new Vector2Int(1, -1), DiagonalMoveCost),
+        new(new Vector2Int(-1, -1), DiagonalMoveCost),
+        new(new Vector2Int(-1, 1), DiagonalMoveCost)
     };
 
     private readonly EnemyAI2D _owner;
@@ -926,38 +976,77 @@ internal sealed class EnemyPathNavigator
         EnemyConfig config,
         Transform player)
     {
-        _path.Clear();
-        _pathIndex = 0;
         _target = target;
         _refreshTimer = config.pathRefreshInterval;
 
         float cellSize = config.pathCellSize;
         Vector2Int startCell = WorldToCell(start, cellSize);
+        Vector2Int targetCell = WorldToCell(target, cellSize);
+
+        if (TryRebuildPath(
+                startCell,
+                targetCell,
+                target,
+                config,
+                player,
+                avoidEnemies: true))
+        {
+            return;
+        }
+
+        TryRebuildPath(
+            startCell,
+            targetCell,
+            target,
+            config,
+            player,
+            avoidEnemies: false);
+    }
+
+    private bool TryRebuildPath(
+        Vector2Int startCell,
+        Vector2Int targetCell,
+        Vector2 target,
+        EnemyConfig config,
+        Transform player,
+        bool avoidEnemies)
+    {
+        _path.Clear();
+        _pathIndex = 0;
+
+        float cellSize = config.pathCellSize;
         Vector2Int goalCell = ResolveGoalCell(
             startCell,
-            WorldToCell(target, cellSize),
+            targetCell,
             cellSize,
-            player);
+            player,
+            avoidEnemies);
 
         if (startCell == goalCell)
         {
             _path.Add(target);
-            return;
+            return true;
         }
 
-        if (!TryFindPath(startCell, goalCell, config, player))
+        if (!TryFindPath(startCell, goalCell, config, player, avoidEnemies))
         {
-            return;
+            return false;
         }
 
-        _path[_path.Count - 1] = target;
+        if (goalCell == targetCell)
+        {
+            _path[_path.Count - 1] = target;
+        }
+
+        return true;
     }
 
     private bool TryFindPath(
         Vector2Int startCell,
         Vector2Int goalCell,
         EnemyConfig config,
-        Transform player)
+        Transform player,
+        bool avoidEnemies)
     {
         _open.Clear();
         _closed.Clear();
@@ -980,16 +1069,21 @@ internal sealed class EnemyPathNavigator
 
             _closed.Add(current);
 
-            foreach (Vector2Int offset in Neighbors)
+            foreach (PathStep step in Neighbors)
             {
-                Vector2Int neighbor = current + offset;
+                Vector2Int neighbor = current + step.Offset;
                 if (_closed.Contains(neighbor) ||
-                    IsCellBlocked(neighbor, config.pathCellSize, player))
+                    !CanEnterNeighborCell(
+                        current,
+                        step.Offset,
+                        config.pathCellSize,
+                        player,
+                        avoidEnemies))
                 {
                     continue;
                 }
 
-                int newCost = _costByCell[current] + 1;
+                int newCost = _costByCell[current] + step.Cost;
                 if (_costByCell.TryGetValue(neighbor, out int oldCost) && oldCost <= newCost)
                 {
                     continue;
@@ -1032,7 +1126,7 @@ internal sealed class EnemyPathNavigator
 
     private int GetEstimatedCost(Vector2Int cell, Vector2Int goalCell)
     {
-        return _costByCell[cell] + GetManhattanDistance(cell, goalCell);
+        return _costByCell[cell] + GetOctileDistance(cell, goalCell);
     }
 
     private void BuildPath(Vector2Int startCell, Vector2Int goalCell, float cellSize)
@@ -1059,9 +1153,10 @@ internal sealed class EnemyPathNavigator
         Vector2Int startCell,
         Vector2Int goalCell,
         float cellSize,
-        Transform player)
+        Transform player,
+        bool avoidEnemies)
     {
-        if (startCell == goalCell || !IsCellBlocked(goalCell, cellSize, player))
+        if (startCell == goalCell || !IsCellBlocked(goalCell, cellSize, player, avoidEnemies))
         {
             return goalCell;
         }
@@ -1077,13 +1172,13 @@ internal sealed class EnemyPathNavigator
                 for (int y = -radius; y <= radius; y++)
                 {
                     Vector2Int candidate = goalCell + new Vector2Int(x, y);
-                    if (GetManhattanDistance(candidate, goalCell) > radius ||
-                        IsCellBlocked(candidate, cellSize, player))
+                    if (GetChebyshevDistance(candidate, goalCell) > radius ||
+                        IsCellBlocked(candidate, cellSize, player, avoidEnemies))
                     {
                         continue;
                     }
 
-                    int distanceToStart = GetManhattanDistance(candidate, startCell);
+                    int distanceToStart = GetOctileDistance(candidate, startCell);
                     if (distanceToStart >= bestDistance)
                     {
                         continue;
@@ -1103,10 +1198,35 @@ internal sealed class EnemyPathNavigator
         return bestCell;
     }
 
+    private bool CanEnterNeighborCell(
+        Vector2Int current,
+        Vector2Int offset,
+        float cellSize,
+        Transform player,
+        bool avoidEnemies)
+    {
+        Vector2Int neighbor = current + offset;
+        if (IsCellBlocked(neighbor, cellSize, player, avoidEnemies))
+        {
+            return false;
+        }
+
+        if (!IsDiagonalOffset(offset))
+        {
+            return true;
+        }
+
+        Vector2Int horizontalNeighbor = current + new Vector2Int(offset.x, 0);
+        Vector2Int verticalNeighbor = current + new Vector2Int(0, offset.y);
+        return !IsCellBlocked(horizontalNeighbor, cellSize, player, avoidEnemies) &&
+            !IsCellBlocked(verticalNeighbor, cellSize, player, avoidEnemies);
+    }
+
     private bool IsCellBlocked(
         Vector2Int cell,
         float cellSize,
-        Transform player)
+        Transform player,
+        bool avoidEnemies)
     {
         int hitCount = Physics2D.OverlapCircleNonAlloc(
             CellToWorld(cell, cellSize),
@@ -1115,7 +1235,7 @@ internal sealed class EnemyPathNavigator
 
         for (int i = 0; i < hitCount; i++)
         {
-            if (IsNavigationObstacle(_obstacleProbeHits[i], player))
+            if (IsNavigationObstacle(_obstacleProbeHits[i], player, avoidEnemies))
             {
                 return true;
             }
@@ -1124,7 +1244,10 @@ internal sealed class EnemyPathNavigator
         return false;
     }
 
-    private bool IsNavigationObstacle(Collider2D collider, Transform player)
+    private bool IsNavigationObstacle(
+        Collider2D collider,
+        Transform player,
+        bool avoidEnemies)
     {
         if (collider == null || collider.isTrigger)
         {
@@ -1147,7 +1270,13 @@ internal sealed class EnemyPathNavigator
             return false;
         }
 
-        return collider.GetComponentInParent<EnemyAI2D>() == null;
+        EnemyAI2D enemy = collider.GetComponentInParent<EnemyAI2D>();
+        if (enemy == null)
+        {
+            return true;
+        }
+
+        return avoidEnemies && enemy != _owner;
     }
 
     private void AdvancePastReachedWaypoints(Vector2 start, float cellSize)
@@ -1194,8 +1323,34 @@ internal sealed class EnemyPathNavigator
         return Mathf.Max(radius, Mathf.Max(extents.x, extents.y));
     }
 
-    private static int GetManhattanDistance(Vector2Int from, Vector2Int to)
+    private static int GetOctileDistance(Vector2Int from, Vector2Int to)
     {
-        return Mathf.Abs(from.x - to.x) + Mathf.Abs(from.y - to.y);
+        int deltaX = Mathf.Abs(from.x - to.x);
+        int deltaY = Mathf.Abs(from.y - to.y);
+        int diagonalSteps = Mathf.Min(deltaX, deltaY);
+        int cardinalSteps = Mathf.Max(deltaX, deltaY) - diagonalSteps;
+        return diagonalSteps * DiagonalMoveCost + cardinalSteps * CardinalMoveCost;
+    }
+
+    private static int GetChebyshevDistance(Vector2Int from, Vector2Int to)
+    {
+        return Mathf.Max(Mathf.Abs(from.x - to.x), Mathf.Abs(from.y - to.y));
+    }
+
+    private static bool IsDiagonalOffset(Vector2Int offset)
+    {
+        return offset.x != 0 && offset.y != 0;
+    }
+
+    private readonly struct PathStep
+    {
+        public PathStep(Vector2Int offset, int cost)
+        {
+            Offset = offset;
+            Cost = cost;
+        }
+
+        public Vector2Int Offset { get; }
+        public int Cost { get; }
     }
 }

@@ -835,12 +835,12 @@ public class EnemyAI2D : MonoBehaviour
             case EnemyState.Hacked:
                 break;
             case EnemyState.Chase:
-                _context.UpdateViewDirectionTowards(_context.LastKnownPlayerPosition);
+                UpdatePlayerViewDirectionTowards(_context.LastKnownPlayerPosition);
                 break;
             case EnemyState.Attack:
                 if (_context.Player != null)
                 {
-                    _context.UpdateViewDirectionTowards(_context.Player.position);
+                    UpdatePlayerViewDirectionTowards(_context.Player.position);
                 }
                 break;
             case EnemyState.RobotCombat:
@@ -891,6 +891,17 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         return true;
+    }
+
+    private void UpdatePlayerViewDirectionTowards(Vector2 target)
+    {
+        float turnSpeedDegreesPerSecond = enemyConfig != null
+            ? enemyConfig.facePlayerTurnSpeedDegreesPerSecond
+            : 0f;
+        _context.UpdateViewDirectionTowardsSmoothly(
+            target,
+            turnSpeedDegreesPerSecond,
+            Time.fixedDeltaTime);
     }
 
     private static EnemyState ParseState(string rawState)

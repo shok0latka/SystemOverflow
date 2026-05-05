@@ -16,6 +16,7 @@ MonoBehaviour:
   chaseSpeed: 2.4
   visionRadius: 6
   visionConeAngleDegrees: 90
+  facePlayerTurnSpeedDegreesPerSecond: 540
   loseSightTime: 1.8
   suspicionGainPerSecond: 0.7
   suspicionDecayPerSecond: 0.2
