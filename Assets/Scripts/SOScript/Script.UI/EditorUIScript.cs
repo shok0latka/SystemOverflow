@@ -18,8 +18,6 @@ public class ScriptEditorUI : MonoBehaviour
         HackCommand.MoveDown,
         HackCommand.MoveLeft,
         HackCommand.MoveRight,
-        HackCommand.RotateCounterClockwise,
-        HackCommand.RotateClockwise,
         HackCommand.Interact,
         HackCommand.Attack
     };

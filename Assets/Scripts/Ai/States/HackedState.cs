@@ -2,10 +2,7 @@ using UnityEngine;
 
 public class HackedState : EnemyStateBase
 {
-    private const float HackTurnDegreesPerSecond = 180f;
-
     private HackCommand _activeCommand = HackCommand.None;
-    private float _activeCommandTimeRemaining;
     private float _activeMovementDistanceRemaining;
     private bool _activeInteractExecuted;
 
@@ -58,7 +55,7 @@ public class HackedState : EnemyStateBase
         }
 
         if (_activeCommand == HackCommand.None &&
-            !TryBeginNextCommand(hackController, fixedDeltaTime))
+            !TryBeginNextCommand(hackController))
         {
             Context.StopMovement();
             return;
@@ -72,14 +69,6 @@ public class HackedState : EnemyStateBase
 
         switch (_activeCommand)
         {
-            case HackCommand.RotateCounterClockwise:
-                Context.RotateWorld(HackTurnDegreesPerSecond, fixedDeltaTime);
-                Context.StopMovement();
-                break;
-            case HackCommand.RotateClockwise:
-                Context.RotateWorld(-HackTurnDegreesPerSecond, fixedDeltaTime);
-                Context.StopMovement();
-                break;
             case HackCommand.Interact:
                 if (!_activeInteractExecuted)
                 {
@@ -101,21 +90,14 @@ public class HackedState : EnemyStateBase
                 ResetActiveCommand();
                 return;
             case HackCommand.None:
-                Context.StopMovement();
-                break;
             default:
                 Context.StopMovement();
-                break;
-        }
-
-        _activeCommandTimeRemaining -= fixedDeltaTime;
-        if (_activeCommandTimeRemaining <= 0f)
-        {
-            ResetActiveCommand();
+                ResetActiveCommand();
+                return;
         }
     }
 
-    private bool TryBeginNextCommand(EnemyHackController hackController, float fixedDeltaTime)
+    private bool TryBeginNextCommand(EnemyHackController hackController)
     {
         if (!hackController.TryDequeueCommand(out HackQueuedCommand command))
         {
@@ -126,9 +108,6 @@ public class HackedState : EnemyStateBase
         _activeMovementDistanceRemaining = command.IsMovement
             ? command.Distance
             : 0f;
-        _activeCommandTimeRemaining = UnityEngine.Mathf.Max(
-            fixedDeltaTime,
-            hackController.CommandStepDuration);
         _activeInteractExecuted = false;
         return true;
     }
@@ -170,7 +149,6 @@ public class HackedState : EnemyStateBase
     private void ResetActiveCommand()
     {
         _activeCommand = HackCommand.None;
-        _activeCommandTimeRemaining = 0f;
         _activeMovementDistanceRemaining = 0f;
         _activeInteractExecuted = false;
     }
