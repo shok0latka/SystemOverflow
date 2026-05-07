@@ -5,7 +5,7 @@ using UnityEngine.UIElements;
 public class HackedRobotAccessButton
 {
     private const string ButtonName = "HackedRobotAccess";
-    private const string ButtonText = "Robot";
+    private const string ButtonText = "Робот";
     private const string ButtonTooltip = "Open hacked robot command menu";
 
     private readonly Action<EnemyHackController> _openTarget;

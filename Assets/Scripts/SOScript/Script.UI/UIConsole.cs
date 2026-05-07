@@ -15,7 +15,7 @@ public class UIConsole: Foldout
 
     private UIConsole()
     {
-        text = "Console";
+        text = "Консоль";
         value = false;
         AddToClassList("ui-console");
 
@@ -28,7 +28,7 @@ public class UIConsole: Foldout
         
         messages.style.height = 400;
 
-        clearButton = new() { text = "Clear" };
+        clearButton = new() { text = "Очистить" };
         clearButton.AddToClassList("toolbar-button");
         clearButton.style.width = StyleKeyword.Auto;
         clearButton.style.marginBottom = 20;

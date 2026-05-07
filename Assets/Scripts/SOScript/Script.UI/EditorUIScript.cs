@@ -312,7 +312,7 @@ public class ScriptEditorUI : MonoBehaviour
         enemyCommands = new Foldout
         {
             name = "EnemyCommands",
-            text = "Enemy Commands",
+            text = "Управление противником",
             value = true
         };
         enemyCommands.style.marginRight = 20;
@@ -366,7 +366,7 @@ public class ScriptEditorUI : MonoBehaviour
 
         if (controller.SelectedBlock == null)
         {
-            Debug.LogWarning("No block selected");
+            UIConsole.Instance.WriteWarning("Блок не выбран");
             return;
         }
 
@@ -393,7 +393,7 @@ public class ScriptEditorUI : MonoBehaviour
 
         if (controller.SelectedBlock == null)
         {
-            UIConsole.Instance.WriteWarning("No block selected");
+            UIConsole.Instance.WriteWarning("Блок не выбран");
             return;
         }
 
@@ -402,7 +402,7 @@ public class ScriptEditorUI : MonoBehaviour
             try
             {
                 var result = await exprBlock.Expression.EvaluateAsync();
-                resultLabel.text = $"Result: {result}";
+                resultLabel.text = $"Результат: {result}";
             }
             catch (Exception e)
             {
@@ -416,7 +416,7 @@ public class ScriptEditorUI : MonoBehaviour
             try
             {
                 var result = await stmtBlock.Statement.ExecuteAsync();
-                resultLabel.text = $"Statement executed (control flow: {result.Kind})";
+                resultLabel.text = $"Команда выполнена";
                 if (boundTarget != null)
                 {
                     CloseEditor(clearQueuedCommands: false, cancelHack: false);
@@ -429,7 +429,7 @@ public class ScriptEditorUI : MonoBehaviour
             return;
         }
 
-        UIConsole.Instance.WriteWarning("Selected block is not evaluable");
+        UIConsole.Instance.WriteWarning("Выбранный блок не запускается");
     }
 
     public void OnEnter()
@@ -451,7 +451,7 @@ public class ScriptEditorUI : MonoBehaviour
 
         if (!target.GetHackStatus().IsActive)
         {
-            UIConsole.Instance.WriteWarning("Enemy is no longer hacked.");
+            UIConsole.Instance.WriteWarning("Противник освободился от взлома");
             return;
         }
 
@@ -460,8 +460,8 @@ public class ScriptEditorUI : MonoBehaviour
         EnemyCommandScriptContext.Bind(boundTarget);
         PauseGameplay();
         SetEditorVisible(true);
-        resultLabel.text = $"Result: Target {boundTarget.name}";
-        UIConsole.Instance.Write($"Command target: {boundTarget.name}", MessageType.Info);
+        resultLabel.text = $"Отправлена команда, цель: {boundTarget.name}";
+        UIConsole.Instance.Write($"Отправлена команда, цель: {boundTarget.name}", MessageType.Info);
     }
 
     void CancelEditor()

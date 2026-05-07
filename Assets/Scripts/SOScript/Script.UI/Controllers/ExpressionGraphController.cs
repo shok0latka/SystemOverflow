@@ -151,13 +151,13 @@ namespace Script.UI.Controllers
 
             if (slot.ParentHost is ExpressionBlockView eqHost && eqHost == block)
             {
-                UIConsole.Instance.WriteWarning($"Connection rejected: cycle risk");
+                UIConsole.Instance.WriteWarning($"Соединение отменено: риск образования цикла");
                 return;
             }
 
             if (parentExpr != null && WouldCreateCycle(parentExpr, childExpr))
             {
-                UIConsole.Instance.WriteWarning($"Connection rejected: cycle risk");
+                UIConsole.Instance.WriteWarning($"Соединение отменено: риск образования цикла");
                 return;
             }
 
@@ -194,7 +194,7 @@ namespace Script.UI.Controllers
 
             if (slot.ParentBlock == block || WouldCreateStatementCycle(slot.ParentBlock.Statement, block.Statement))
             {
-                UIConsole.Instance.WriteWarning($"[GraphController] Connection rejected: cycle risk");
+                UIConsole.Instance.WriteWarning($"Соединение отменено: риск образования цикла");
                 return;
             }
 
