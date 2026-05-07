@@ -162,6 +162,11 @@ public class ScriptEditorUI : MonoBehaviour
         {
             Debug.Log($"Geometry Changed");
 
+            if (editorRoot.style.display == DisplayStyle.None)
+            {
+                return;
+            }
+
             minZoom = Mathf.Max(
                 editor.layout.width  / field.layout.width,
                 editor.layout.height / field.layout.height
@@ -189,6 +194,8 @@ public class ScriptEditorUI : MonoBehaviour
 
             field.style.top = newTop;
             field.style.left = newLeft;
+
+            Debug.Log($"Set Top/Left: {newTop} {newLeft}");
         });
 
         var graph = new GraphRoot();        
