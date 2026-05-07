@@ -19,15 +19,13 @@ public enum HackPhase
 
 public enum HackCommand
 {
-    None,
-    MoveUp,
-    MoveDown,
-    MoveLeft,
-    MoveRight,
-    RotateCounterClockwise,
-    RotateClockwise,
-    Interact,
-    Attack,
+    None = 0,
+    MoveUp = 1,
+    MoveDown = 2,
+    MoveLeft = 3,
+    MoveRight = 4,
+    Interact = 7,
+    Attack = 8,
 }
 
 public readonly struct HackQueuedCommand

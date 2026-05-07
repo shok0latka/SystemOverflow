@@ -97,8 +97,6 @@ public sealed class EnemyCommandStatement : IStatement
             HackCommand.MoveDown => "Move Down",
             HackCommand.MoveLeft => "Move Left",
             HackCommand.MoveRight => "Move Right",
-            HackCommand.RotateCounterClockwise => "Rotate Counterclockwise",
-            HackCommand.RotateClockwise => "Rotate Clockwise",
             HackCommand.Interact => "Interact",
             HackCommand.Attack => "Attack",
             _ => "Enemy Command"

@@ -558,18 +558,6 @@ public class EnemyContext
             !hit.collider.isTrigger;
     }
 
-    public void RotateWorld(float degreesPerSecond, float deltaTime)
-    {
-        if (Rigidbody == null ||
-            Mathf.Abs(degreesPerSecond) < 0.001f ||
-            deltaTime <= 0f)
-        {
-            return;
-        }
-
-        Rigidbody.MoveRotation(Rigidbody.rotation + degreesPerSecond * deltaTime);
-    }
-
     public bool TryInteractWithNearestInteractable()
     {
         Collider2D[] colliders = Physics2D.OverlapCircleAll(Position, Config.interactRadius);
