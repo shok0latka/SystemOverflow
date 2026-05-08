@@ -461,8 +461,8 @@ public class ScriptEditorUI : MonoBehaviour
         EnemyCommandScriptContext.Bind(boundTarget);
         PauseGameplay();
         SetEditorVisible(true);
-        resultLabel.text = $"Отправлена команда, цель: {boundTarget.name}";
-        UIConsole.Instance.Write($"Отправлена команда, цель: {boundTarget.name}", MessageType.Info);
+        resultLabel.text = $"Взлом начат, цель: {boundTarget.name}";
+        UIConsole.Instance.WriteInfo($"Взлом начат, цель: {boundTarget.name}");
     }
 
     void CancelEditor()
@@ -485,6 +485,9 @@ public class ScriptEditorUI : MonoBehaviour
         if (cancelHack)
         {
             boundTarget?.TryCancelHack();
+            GraphRoot.Instance.Clear();
+            varList.Clear();
+            scope.Clear();
         }
 
         if (boundTarget != null)

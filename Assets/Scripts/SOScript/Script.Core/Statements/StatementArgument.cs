@@ -23,7 +23,7 @@ namespace Script.Core.Statements
                 var newType = value?.Type ?? ScriptType.Undefined;
                 if (!ValidateType(newType))
                 {
-                    throw new ArgumentException($"Incorrect argument type {newType} for parameter '{Name}'");
+                    throw new ArgumentException($"Incorrect argument type {newType} for parameter '{Name}'. Expected one of the following: {string.Join(", ", AllowedTypes)}");
                 }
                 attached = value;
                 if (attached is not null)
@@ -72,7 +72,7 @@ namespace Script.Core.Statements
             }
             if (!ValidateType(Attached.Type, true))
             {
-                throw new ArgumentException($"Incorrect argument type {Attached.Type} for parameter '{Name}'");
+                throw new ArgumentException($"Incorrect argument type {Attached.Type} for parameter '{Name}'. Expected one of the following: {string.Join(", ", AllowedTypes)}");
             }
 
             return Attached.EvaluateAsync();
