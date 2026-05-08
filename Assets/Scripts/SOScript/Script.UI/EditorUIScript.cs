@@ -343,6 +343,9 @@ public class ScriptEditorUI : MonoBehaviour
         var evalButton = root.Q<Button>("Execute");
         evalButton.clicked += EvaluateSelected;
 
+        var hideButton = root.Q<Button>("Hide");
+        hideButton.clicked += HideEditor;
+
         var cancelButton = root.Q<Button>("Cancel");
         if (cancelButton != null)
         {
@@ -415,10 +418,10 @@ public class ScriptEditorUI : MonoBehaviour
             {
                 var result = await stmtBlock.Statement.ExecuteAsync();
                 resultLabel.text = $"Команда выполнена";
-                if (boundTarget != null)
-                {
-                    CloseEditor(clearQueuedCommands: false, cancelHack: false);
-                }
+                // if (boundTarget != null)
+                // {
+                //     CloseEditor(clearQueuedCommands: false, cancelHack: false);
+                // }
             }
             catch (Exception e)
             {
@@ -465,6 +468,11 @@ public class ScriptEditorUI : MonoBehaviour
     void CancelEditor()
     {
         CloseEditor(clearQueuedCommands: true, cancelHack: true);
+    }
+
+    void HideEditor()
+    {
+        CloseEditor(clearQueuedCommands: false, cancelHack: false);
     }
 
     void CloseEditor(bool clearQueuedCommands, bool cancelHack)
