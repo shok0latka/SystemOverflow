@@ -110,13 +110,22 @@ namespace Script.UI.Views
             };
             field.AddToClassList("expr-input");
 
+            var textElement = field.Q<TextElement>();
+            textElement.style.paddingBottom = 0;
+            textElement.style.paddingLeft = 0;
+            textElement.style.paddingRight = 0;
+            textElement.style.paddingTop = 0;
+
+
             field.RegisterValueChangedCallback(evt =>
             {
+                UpdateSize(field, evt.newValue);
                 expr.RawText = evt.newValue;
             });
 
             field.RegisterCallback<FocusOutEvent>(_ =>
             {
+                UpdateSize(field, field.value);
                 expr.RawText = field.value;
             });
 
@@ -124,12 +133,30 @@ namespace Script.UI.Views
             {
                 if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
                 {
+                    UpdateSize(field, field.value);
                     expr.RawText = field.value;
                     field.Blur();
                 }
             });
 
             Add(field);
+        }
+
+        void UpdateSize(TextField field, string text, float MinWidth = 60f, float ExtraPadding = 30f)
+        {
+            var textElement = field.Q<TextElement>();
+
+            var size = textElement.MeasureTextSize(
+                string.IsNullOrEmpty(text) ? " " : text,
+                0,
+                MeasureMode.Undefined,
+                0,
+                MeasureMode.Undefined
+            );
+
+            float width = Mathf.Max(MinWidth, size.x + ExtraPadding);
+
+            field.style.width = width;
         }
 
         public ExpressionBlockView(TrueConstant expr, string? debugName = null) : this((Expression)expr, debugName)
