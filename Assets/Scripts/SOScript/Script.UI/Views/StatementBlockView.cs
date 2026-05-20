@@ -85,13 +85,18 @@ namespace Script.UI.Views
             {
                 var arg = Statement.Arguments[i];
 
+                var container = new VisualElement();
+                container.style.flexDirection = FlexDirection.Row;
+                container.style.alignItems = Align.Center;
+
                 var label = new Label(arg.Name + ":");
                 label.AddToClassList("stmt-arg-label");
-                content.Add(label);
+                container.Add(label);
 
                 var slot = new ExprSlotView(this, i);
                 ExprSlots.Add(slot);
-                content.Add(slot);
+                container.Add(slot);
+                content.Add(container);
             }
         }
 
