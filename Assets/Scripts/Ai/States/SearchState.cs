@@ -4,6 +4,7 @@ public class SearchState : EnemyStateBase
 {
     private const int SearchPointCount = 4;
     private const float SearchPointArrivalDistance = 0.2f;
+    private const float SearchPointDuplicateDistance = 0.05f;
     private const float LastKnownRebuildDistance = 0.05f;
 
     private static readonly Vector2[] ClockwiseDiagonalOffsets =
@@ -18,6 +19,7 @@ public class SearchState : EnemyStateBase
 
     private Vector2 _routeCenter;
     private int _searchPointIndex;
+    private int _searchPointCount;
     private bool _hasActiveRoute;
 
     public SearchState(EnemyContext context, EnemyStateMachine stateMachine)
@@ -50,6 +52,10 @@ public class SearchState : EnemyStateBase
         if (!_hasActiveRoute || HasLastKnownPlayerPositionChanged())
         {
             BuildSearchRoute();
+            if (!_hasActiveRoute)
+            {
+                return;
+            }
         }
 
         if (Context.IsNear(GetCurrentSearchPoint(), SearchPointArrivalDistance))
@@ -90,7 +96,8 @@ public class SearchState : EnemyStateBase
     {
         _routeCenter = Context.LastKnownPlayerPosition;
         _searchPointIndex = 0;
-        _hasActiveRoute = true;
+        _searchPointCount = 0;
+        _hasActiveRoute = false;
 
         Context.ClearPath();
         Context.ResetReturnTimer();
@@ -101,10 +108,44 @@ public class SearchState : EnemyStateBase
         {
             Vector2 offsetDirection = ClockwiseDiagonalOffsets[
                 (startOffsetIndex + index) % SearchPointCount];
-            _searchPoints[index] = _routeCenter + offsetDirection * offset;
+            TryAddSearchPoint(_routeCenter + offsetDirection * offset);
         }
 
+        if (_searchPointCount == 0)
+        {
+            CompleteSearch();
+            return;
+        }
+
+        _hasActiveRoute = true;
         ActivateCurrentSearchPoint();
+    }
+
+    private bool TryAddSearchPoint(Vector2 candidate)
+    {
+        if (!Context.TryResolveSearchPoint(candidate, out Vector2 searchPoint) ||
+            ContainsSearchPoint(searchPoint))
+        {
+            return false;
+        }
+
+        _searchPoints[_searchPointCount] = searchPoint;
+        _searchPointCount++;
+        return true;
+    }
+
+    private bool ContainsSearchPoint(Vector2 candidate)
+    {
+        float duplicateSqrDistance = SearchPointDuplicateDistance * SearchPointDuplicateDistance;
+        for (int index = 0; index < _searchPointCount; index++)
+        {
+            if ((_searchPoints[index] - candidate).sqrMagnitude <= duplicateSqrDistance)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private int FindNearestOffsetIndex(Vector2 center, Vector2 origin, float offset)
@@ -136,7 +177,8 @@ public class SearchState : EnemyStateBase
 
     private Vector2 GetCurrentSearchPoint()
     {
-        return _searchPoints[Mathf.Clamp(_searchPointIndex, 0, SearchPointCount - 1)];
+        int maxIndex = Mathf.Max(0, _searchPointCount - 1);
+        return _searchPoints[Mathf.Clamp(_searchPointIndex, 0, maxIndex)];
     }
 
     private void ActivateCurrentSearchPoint()
@@ -152,7 +194,7 @@ public class SearchState : EnemyStateBase
         Context.ClearPath();
         Context.ResetReturnTimer();
 
-        if (_searchPointIndex >= SearchPointCount)
+        if (_searchPointIndex >= _searchPointCount)
         {
             CompleteSearch();
             return;

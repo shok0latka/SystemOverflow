@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.Tilemaps;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class EnemyAI2D : MonoBehaviour
@@ -20,8 +21,9 @@ public class EnemyAI2D : MonoBehaviour
     [SerializeField] private Transform[] patrolPoints;
     [SerializeField] private Transform player;
 
-    [Header("Perception")]
+    [Header("Navigation")]
     [SerializeField] private LayerMask obstacleMask;
+    [SerializeField] private Tilemap walkableTilemap;
 
     [Header("Status Indicator")]
     [SerializeField] private TextMesh statusText;
@@ -48,6 +50,7 @@ public class EnemyAI2D : MonoBehaviour
     private EnemyConfig _boundConfig;
     private Transform[] _boundPatrolPoints;
     private Transform _boundPlayer;
+    private Tilemap _boundWalkableTilemap;
     private int _boundObstacleMask;
     private bool _bindingsDirty = true;
     private bool _hasSentAlertForCurrentChase;
@@ -399,7 +402,14 @@ public class EnemyAI2D : MonoBehaviour
         }
 
         ConfigureHealth(allowCreate: true, resetCurrentHp: health == null);
-        _context = new EnemyContext(this, enemyConfig, rb, patrolPoints, player, obstacleMask);
+        _context = new EnemyContext(
+            this,
+            enemyConfig,
+            rb,
+            patrolPoints,
+            player,
+            obstacleMask,
+            walkableTilemap);
         _context.SetHackController(_hackController);
         _context.SetHealth(health);
         _context.EnsurePlayerReference();
@@ -436,8 +446,15 @@ public class EnemyAI2D : MonoBehaviour
         bool configChanged = _boundConfig != enemyConfig;
         bool patrolChanged = !ReferenceEquals(_boundPatrolPoints, patrolPoints);
         bool playerChanged = _boundPlayer != player;
+        bool walkableChanged = _boundWalkableTilemap != walkableTilemap;
         bool obstacleChanged = _boundObstacleMask != obstacleMask.value;
-        bool shouldApply = force || _bindingsDirty || configChanged || patrolChanged || playerChanged || obstacleChanged;
+        bool shouldApply = force ||
+            _bindingsDirty ||
+            configChanged ||
+            patrolChanged ||
+            playerChanged ||
+            walkableChanged ||
+            obstacleChanged;
 
         if (!shouldApply)
         {
@@ -447,6 +464,7 @@ public class EnemyAI2D : MonoBehaviour
         _context.SetConfig(enemyConfig);
         _context.SetPatrolPoints(patrolPoints);
         _context.ObstacleMask = obstacleMask;
+        _context.SetWalkableTilemap(walkableTilemap);
         _context.SetHackController(_hackController);
         if (configChanged || force || _bindingsDirty)
         {
@@ -469,6 +487,7 @@ public class EnemyAI2D : MonoBehaviour
         _boundConfig = enemyConfig;
         _boundPatrolPoints = patrolPoints;
         _boundPlayer = player;
+        _boundWalkableTilemap = walkableTilemap;
         _boundObstacleMask = obstacleMask.value;
         _bindingsDirty = false;
     }

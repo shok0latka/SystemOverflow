@@ -1,16 +1,21 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class EnemyContext
 {
+    private const string DefaultWalkableTilemapName = "Floor";
     private const float MinimumInputMagnitude = 0.0001f;
     private const int MovementCastCapacity = 8;
     private const int LineOfSightCastCapacity = 8;
+    private const int SearchPointProbeCapacity = 16;
+    private const int SearchPointResolveCellRadius = 6;
     private const float MovementSkinWidth = 0.02f;
 
     private readonly EnemyAI2D _owner;
     private readonly RaycastHit2D[] _movementHits = new RaycastHit2D[MovementCastCapacity];
     private readonly RaycastHit2D[] _lineOfSightHits = new RaycastHit2D[LineOfSightCastCapacity];
+    private readonly Collider2D[] _searchPointHits = new Collider2D[SearchPointProbeCapacity];
     private readonly EnemyPathNavigator _pathNavigator;
 
     public EnemyContext(
@@ -19,7 +24,8 @@ public class EnemyContext
         Rigidbody2D rigidbody,
         Transform[] patrolPoints,
         Transform player,
-        LayerMask obstacleMask
+        LayerMask obstacleMask,
+        Tilemap walkableTilemap
     )
     {
         _owner = owner;
@@ -29,6 +35,7 @@ public class EnemyContext
         Player = player;
         ObstacleMask = obstacleMask;
         _pathNavigator = new EnemyPathNavigator(owner, rigidbody);
+        SetWalkableTilemap(walkableTilemap);
         Suspicion = new SuspicionMeter(
             config.suspicionGainPerSecond,
             config.suspicionDecayPerSecond
@@ -41,6 +48,7 @@ public class EnemyContext
     public Transform Player { get; private set; }
     public PlayerHealth PlayerHealth { get; private set; }
     public LayerMask ObstacleMask { get; set; }
+    public Tilemap WalkableTilemap { get; private set; }
     public EnemyHackController HackController { get; private set; }
     public EnemyHealth Health { get; private set; }
 
@@ -86,6 +94,14 @@ public class EnemyContext
         ClearPath();
     }
 
+    public void SetWalkableTilemap(Tilemap walkableTilemap)
+    {
+        WalkableTilemap = walkableTilemap != null
+            ? walkableTilemap
+            : FindDefaultWalkableTilemap();
+        ClearPath();
+    }
+
     public void SetHackController(EnemyHackController hackController)
     {
         HackController = hackController;
@@ -118,6 +134,23 @@ public class EnemyContext
     {
         ActiveSearchTargetPosition = default;
         HasActiveSearchTarget = false;
+    }
+
+    public bool TryResolveSearchPoint(Vector2 candidate, out Vector2 searchPoint)
+    {
+        searchPoint = candidate;
+        if (WalkableTilemap == null)
+        {
+            return true;
+        }
+
+        Vector3Int candidateCell = WalkableTilemap.WorldToCell(candidate);
+        if (TryGetWalkablePoint(candidateCell, candidate, out searchPoint))
+        {
+            return true;
+        }
+
+        return TryFindNearestWalkablePoint(candidateCell, candidate, out searchPoint);
     }
 
     public void EnsurePlayerReference()
@@ -556,6 +589,170 @@ public class EnemyContext
         return hit.collider != null &&
             hit.collider != ignoredCollider &&
             !hit.collider.isTrigger;
+    }
+
+    private bool TryFindNearestWalkablePoint(
+        Vector3Int originCell,
+        Vector2 candidate,
+        out Vector2 searchPoint)
+    {
+        searchPoint = default;
+
+        for (int radius = 1; radius <= SearchPointResolveCellRadius; radius++)
+        {
+            bool found = false;
+            Vector2 bestPoint = default;
+            float bestSqrDistance = float.MaxValue;
+
+            for (int x = -radius; x <= radius; x++)
+            {
+                for (int y = -radius; y <= radius; y++)
+                {
+                    if (Mathf.Max(Mathf.Abs(x), Mathf.Abs(y)) != radius)
+                    {
+                        continue;
+                    }
+
+                    Vector3Int cell = new(
+                        originCell.x + x,
+                        originCell.y + y,
+                        originCell.z);
+                    if (!TryGetWalkablePoint(cell, candidate, out Vector2 point))
+                    {
+                        continue;
+                    }
+
+                    float sqrDistance = (point - candidate).sqrMagnitude;
+                    if (sqrDistance >= bestSqrDistance)
+                    {
+                        continue;
+                    }
+
+                    found = true;
+                    bestPoint = point;
+                    bestSqrDistance = sqrDistance;
+                }
+            }
+
+            if (found)
+            {
+                searchPoint = bestPoint;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryGetWalkablePoint(
+        Vector3Int cell,
+        Vector2 preferredPoint,
+        out Vector2 searchPoint)
+    {
+        searchPoint = default;
+        if (WalkableTilemap == null || !WalkableTilemap.HasTile(cell))
+        {
+            return false;
+        }
+
+        Vector2 point = IsPointInCell(preferredPoint, cell)
+            ? preferredPoint
+            : (Vector2)WalkableTilemap.GetCellCenterWorld(cell);
+        if (IsSearchPointBlocked(point))
+        {
+            return false;
+        }
+
+        searchPoint = point;
+        return true;
+    }
+
+    private bool IsPointInCell(Vector2 point, Vector3Int cell)
+    {
+        return WalkableTilemap != null &&
+            WalkableTilemap.WorldToCell(point) == cell;
+    }
+
+    private bool IsSearchPointBlocked(Vector2 point)
+    {
+        int hitCount = Physics2D.OverlapCircleNonAlloc(
+            point,
+            GetSearchPointProbeRadius(),
+            _searchPointHits);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            if (IsSearchPointObstacle(_searchPointHits[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsSearchPointObstacle(Collider2D collider)
+    {
+        if (collider == null || collider.isTrigger)
+        {
+            return false;
+        }
+
+        Transform hitTransform = collider.transform;
+        if (WalkableTilemap != null &&
+            (hitTransform == WalkableTilemap.transform ||
+                hitTransform.IsChildOf(WalkableTilemap.transform)))
+        {
+            return false;
+        }
+
+        if (Rigidbody != null && collider.attachedRigidbody == Rigidbody)
+        {
+            return false;
+        }
+
+        if (_owner != null && hitTransform.IsChildOf(_owner.transform))
+        {
+            return false;
+        }
+
+        if (Player != null && (hitTransform == Player || hitTransform.IsChildOf(Player)))
+        {
+            return false;
+        }
+
+        EnemyAI2D enemy = collider.GetComponentInParent<EnemyAI2D>();
+        return enemy == null || enemy != _owner;
+    }
+
+    private float GetSearchPointProbeRadius()
+    {
+        float cellSize = Config != null ? Config.pathCellSize : 0.5f;
+        float radius = Mathf.Max(0.05f, cellSize * 0.45f);
+        Collider2D bodyCollider = Rigidbody != null ? Rigidbody.GetComponent<Collider2D>() : null;
+        if (bodyCollider == null)
+        {
+            return radius;
+        }
+
+        Vector3 extents = bodyCollider.bounds.extents;
+        return Mathf.Max(radius, Mathf.Max(extents.x, extents.y));
+    }
+
+    private static Tilemap FindDefaultWalkableTilemap()
+    {
+        Tilemap[] tilemaps = Object.FindObjectsByType<Tilemap>(FindObjectsSortMode.None);
+        foreach (Tilemap tilemap in tilemaps)
+        {
+            if (tilemap != null &&
+                tilemap.isActiveAndEnabled &&
+                tilemap.name == DefaultWalkableTilemapName)
+            {
+                return tilemap;
+            }
+        }
+
+        return null;
     }
 
     public bool TryInteractWithNearestInteractable()
