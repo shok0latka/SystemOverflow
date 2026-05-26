@@ -12,5 +12,14 @@ public class SceneChanger : MonoBehaviour
     {
         _gameStateManager.GetComponent<GameStateManager>().StartSceneProblem();
         _fade.GetComponent<SceneTransition>().ChangeScene("StartScene");
-    } 
+    }
+
+    public void ExitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
 }
